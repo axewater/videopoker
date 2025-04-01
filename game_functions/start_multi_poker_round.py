@@ -12,7 +12,8 @@ def start_multi_poker_round(game_state_manager: GameState, sounds: Dict[str, Any
     """
     cost = constants.NUM_MULTI_HANDS
     game_state_manager.set_cost_per_game(cost) # Set cost for N hands
-    if game_state_manager.start_game():
+    # Corrected method name below
+    if game_state_manager.start_fixed_cost_game(): 
         updated_state = reset_game_variables()
         deck = Deck() # Fresh deck for the initial deal
         updated_state['hand'] = deck.deal(5) # Deal the base hand

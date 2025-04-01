@@ -27,15 +27,16 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     center_y = constants.SCREEN_HEIGHT // 2
     wheel_radius = min(center_x, center_y) - 50 # Radius of the main wheel
     number_radius = wheel_radius - 25 # Radius for placing numbers
-    ball_track_radius = wheel_radius + 15 # Radius for the ball animation
-    ball_radius = 8
+    # --- Ball related variables removed ---
+    # ball_track_radius = wheel_radius + 15
+    # ball_radius = 8
 
     # --- Semi-transparent background overlay ---
     overlay = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 200)) # Dark overlay
     surface.blit(overlay, (0, 0))
 
-    # --- Calculate Rotation and Ball Position ---
+    # --- Calculate Rotation ---
     spin_timer = game_state.get('roulette_spin_timer', 0)
     pause_timer = game_state.get('roulette_pause_timer', 0) # Get pause timer
     total_duration = constants.ROULETTE_SPIN_DURATION
@@ -57,9 +58,10 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     target_angle = (winning_number_index * angle_per_slot) + (angle_per_slot / 2)
 
     current_angle = 0
-    ball_current_angle = 0
+    # --- Ball angle calculation removed ---
+    # ball_current_angle = 0
 
-    # Determine wheel rotation and ball position based on phase (spinning or paused)
+    # Determine wheel rotation based on phase (spinning or paused)
     if spin_timer > 0:
         # Still spinning
         time_elapsed = total_duration - spin_timer
@@ -70,31 +72,13 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         total_spins = 5
         current_angle = (total_spins * 360 + target_angle) * eased_progress
 
-        # Ball animation during spin (opposite direction)
-        ball_total_rotation = - (total_spins + 3) * 360 # Negative for opposite direction
-        ball_current_angle = ball_total_rotation * eased_progress
-
-        # Ball settles towards the pointer (angle 0) in the last part of the spin
-        settle_start_progress = 0.85
-        # *** FIX: Ball's final angle should be 0 (at the pointer) ***
-        ball_final_angle_deg = 0
-        if progress >= settle_start_progress:
-             settle_progress = (progress - settle_start_progress) / (1 - settle_start_progress)
-             # Angle where the smooth spinning part ends
-             spin_angle_at_settle = ball_total_rotation * (1 - (1 - settle_start_progress)**3)
-             # Interpolate from the spin angle towards the final angle (0)
-             ball_current_angle = spin_angle_at_settle + (ball_final_angle_deg - spin_angle_at_settle) * settle_progress
+        # --- Ball animation logic removed ---
 
     else: # spin_timer is 0, wheel is stopped (might be pausing/flashing)
         current_angle = target_angle # Wheel stops at target angle
-        # *** FIX: Ball stops at angle 0 (relative to the pointer) ***
-        ball_current_angle = 0
+        # --- Ball angle setting removed ---
 
-    # Calculate final ball screen coordinates
-    # Ball angle 0 corresponds to trig angle 90 (top)
-    ball_angle_rad = math.radians(ball_current_angle + 90)
-    ball_x = center_x + ball_track_radius * math.cos(ball_angle_rad)
-    ball_y = center_y - ball_track_radius * math.sin(ball_angle_rad) # Use minus for Pygame's inverted Y
+    # --- Ball coordinate calculation removed ---
 
     # --- Draw Wheel ---
     wheel_surf_size = wheel_radius * 2
@@ -167,9 +151,7 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     pygame.draw.circle(surface, constants.GOLD, (center_x, center_y), 15)
     pygame.draw.circle(surface, constants.BLACK, (center_x, center_y), 13)
 
-    # --- Draw Ball ---
-    pygame.draw.circle(surface, constants.WHITE, (int(ball_x), int(ball_y)), ball_radius)
-    pygame.draw.circle(surface, constants.GREY, (int(ball_x), int(ball_y)), ball_radius - 2)
+    # --- Draw Ball removed ---
 
     # --- Draw Pointer ---
     pointer_size = 20

@@ -5,13 +5,15 @@ from deck import Deck
 from game_state import GameState
 from .reset_game_variables import reset_game_variables
 
+
 def start_draw_poker_round(game_state_manager: GameState, sounds: Dict[str, Any]) -> Dict[str, Any]:
     """
     Starts a new round of standard Draw Poker.
     Returns a dictionary of the updated game state variables.
     """
     game_state_manager.set_cost_per_game(1) # Ensure cost is 1
-    if game_state_manager.start_game():
+    # Corrected method name below
+    if game_state_manager.start_fixed_cost_game(): 
         updated_state = reset_game_variables() # Get reset variables
         deck = Deck() # Get a fresh shuffled deck
         updated_state['hand'] = deck.deal(5)

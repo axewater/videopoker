@@ -14,7 +14,8 @@ def start_blackjack_round(game_state_manager: GameState, sounds: Dict[str, Any])
     bet_amount = 1 # Fixed bet for now
     game_state_manager.set_cost_per_game(bet_amount)
 
-    if game_state_manager.start_game():
+    # Corrected method name below
+    if game_state_manager.start_fixed_cost_game(): 
         updated_state = reset_game_variables() # Reset general variables
         deck = Deck() # Get a fresh shuffled deck
 

@@ -116,6 +116,17 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 new_game_state['roulette_winning_number'] = None
                 new_game_state['roulette_total_bet'] = 0
 
+        elif action == constants.ACTION_CHOOSE_SLOTS: # Added handler for Slots
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # For now, just show a message, don't change state or reset
+                new_game_state['message'] = "Slots game coming soon!"
+                # Or transition to a placeholder state if needed:
+                # reset_state = reset_game_variables()
+                # new_game_state.update(reset_state)
+                # new_game_state['current_state'] = constants.STATE_SLOTS_IDLE
+
+
         elif action == constants.ACTION_RESTART_GAME:
             if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
                 if sounds.get("button"): sounds["button"].play()

@@ -45,6 +45,8 @@ class InputHandler:
                         actions.append((constants.ACTION_CHOOSE_BLACKJACK, None))
                     elif constants.ROULETTE_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CHOOSE_ROULETTE, None))
+                    elif constants.SLOTS_BUTTON_RECT.collidepoint(mouse_pos): # Added check for Slots button
+                        actions.append((constants.ACTION_CHOOSE_SLOTS, None))
                     elif constants.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
                         actions.append((constants.ACTION_RETURN_TO_TOP_MENU, None))
                     elif constants.RESTART_GAME_BUTTON_RECT.collidepoint(mouse_pos): # Restart button

@@ -59,6 +59,7 @@ class GameState:
         """Resets the tracked total bet for the round."""
         self._current_total_bet = 0
 
+
 if __name__ == '__main__':
     # Example usage
     state = GameState(starting_money=5)
@@ -66,7 +67,8 @@ if __name__ == '__main__':
     print(f"Cost per game: ${state.get_cost_per_game()}")
     print(f"Can play? {state.can_play()}")
     # Use start_fixed_cost_game for poker/blackjack
-    if state.start_game():
+    # Corrected method name below
+    if state.start_fixed_cost_game(): 
         print(f"Started game. Money left: ${state.money}")
     else:
         print("Cannot start game.")
@@ -87,7 +89,8 @@ if __name__ == '__main__':
         print(f"Could not place $10 bet. Money left: ${state.money}")
 
     # Play until broke
-    while state.start_fixed_cost_game():
+    # Corrected method name below
+    while state.start_fixed_cost_game(): 
         print(f"Played a game. Money left: ${state.money}")
 
     print(f"Final money: ${state.money}")
@@ -98,3 +101,4 @@ if __name__ == '__main__':
         GameState(0)
     except ValueError as e:
         print(f"Caught expected error: {e}")
+
