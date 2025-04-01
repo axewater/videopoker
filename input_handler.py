@@ -31,11 +31,6 @@ class InputHandler:
                     actions.append((constants.ACTION_QUIT, None))
                     continue # Don't process other clicks if quit is clicked
 
-                # --- Always check Return to Menu button (if not already in menu) ---
-                if current_state != constants.STATE_TOP_MENU and constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
-                    actions.append((constants.ACTION_RETURN_TO_MENU, None))
-                    continue # Don't process other clicks if returning to menu
-
                 # --- State-dependent checks ---
                 if current_state == constants.STATE_TOP_MENU:
                     if constants.PLAY_BUTTON_RECT.collidepoint(mouse_pos):
@@ -50,7 +45,7 @@ class InputHandler:
                         actions.append((constants.ACTION_CHOOSE_DRAW_POKER, None))
                     elif constants.MULTI_POKER_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CHOOSE_MULTI_POKER, None))
-                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
+                    elif constants.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
                         actions.append((constants.ACTION_RETURN_TO_TOP_MENU, None))
 
                 elif current_state in [constants.STATE_DRAW_POKER_IDLE, constants.STATE_MULTI_POKER_IDLE,

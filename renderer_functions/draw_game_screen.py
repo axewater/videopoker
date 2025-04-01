@@ -19,10 +19,10 @@ def draw_game_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font]
     winning_rank = render_data.get('winning_rank')
     is_multi_poker = current_state in [constants.STATE_MULTI_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_SHOWING_RESULT]
 
-    # Draw Pay Table - position depends on game mode
-    pay_table_x = constants.PAY_TABLE_MULTI_X if is_multi_poker else constants.PAY_TABLE_X
+    # Draw Pay Table - Always position top-left
+    pay_table_x = constants.PAY_TABLE_X # Always use the standard X position
     pay_table_y = constants.PAY_TABLE_Y
-    # Highlight only works well for single hand mode, disable for multi
+    # Highlight only works well for single hand mode, disable for multi (already handled by passing None)
     draw_pay_table(surface, fonts, x=pay_table_x, y=pay_table_y, winning_rank=winning_rank if not is_multi_poker else None)
 
     # Draw Money
