@@ -23,20 +23,20 @@ REEL_STRIPS: List[List[str]] = [
 # For a simple 3-reel machine, the payline is just the result of the spin.
 # If we had multiple rows visible, we'd specify which row is the payline.
 
-# --- Payout Table ---
+# --- Payout Table --- Adjusted for ~95% RTP (House Edge ~5%) ---
 # Maps winning combinations (as tuples of symbol names) to their payout multiplier.
 # Order within the tuple matters if the combination is order-dependent (usually not in slots).
 # Use counts for combinations like "any bar".
 SLOTS_PAYOUTS: Dict[Tuple[str, ...], int] = {
-    ("7", "7", "7"): 100,
-    ("bell", "bell", "bell"): 20,
-    ("3bar", "3bar", "3bar"): 50, # Higher payout for 3bar
-    ("2bar", "2bar", "2bar"): 40, # Mid payout for 2bar
-    ("1bar", "1bar", "1bar"): 30, # Lower payout for 1bar
+    ("7", "7", "7"): 60,         # Reduced from 100
+    ("bell", "bell", "bell"): 10,  # Reduced from 20
+    ("3bar", "3bar", "3bar"): 20,  # Reduced from 50
+    ("2bar", "2bar", "2bar"): 15,  # Reduced from 40
+    ("1bar", "1bar", "1bar"): 10,  # Reduced from 30
     # Combinations of bars (Any Bar) - Handled separately in calculation
-    ("cherry", "cherry", "cherry"): 10,
-    ("cherry", "cherry", None): 5,  # Two cherries (None means any other symbol on 3rd reel)
-    ("cherry", None, None): 2,      # One cherry (on first reel)
+    ("cherry", "cherry", "cherry"): 5, # Reduced from 10
+    ("cherry", "cherry", None): 2,      # Reduced from 5 (Two cherries)
+    ("cherry", None, None): 1,          # Reduced from 2 (One cherry - significant impact)
 }
 
 BAR_SYMBOLS = {"1bar", "2bar", "3bar"}
@@ -73,13 +73,13 @@ def calculate_winnings(payline_symbols: List[str], bet_amount: int) -> Tuple[int
     # --- Check for "Any Bar" combination ---
     num_bars = sum(1 for symbol in payline_symbols if symbol in BAR_SYMBOLS)
     if num_bars == 3:
-        # Define a payout for "Any 3 Bars"
-        any_bar_payout = 15 # Example payout
+        # Define a payout for "Any 3 Bars" - Adjusted Payout
+        any_bar_payout = 5 # Reduced from 15
         win_name = "Any 3 Bars"
         return any_bar_payout * bet_amount, win_name
 
     # --- Check for Cherry combinations (handle None placeholders) ---
-    # Two cherries (first two reels)
+    # Two cherries (first two reels) - MUST check before single cherry
     if payline_symbols[0] == "cherry" and payline_symbols[1] == "cherry":
         two_cherry_key = ("cherry", "cherry", None)
         if two_cherry_key in SLOTS_PAYOUTS:
@@ -99,14 +99,14 @@ def calculate_winnings(payline_symbols: List[str], bet_amount: int) -> Tuple[int
     return 0, ""
 
 if __name__ == '__main__':
-    # Example Usage
-    print("Simulating 10 spins:")
+    # Example Usage remains the same for testing
+    print("Simulating 10 spins with adjusted payouts:")
     for i in range(10):
         result = spin_reels()
         winnings, win_name = calculate_winnings(result, 1)
         print(f"Spin {i+1}: {result} -> Win: ${winnings} ({win_name if winnings > 0 else 'No Win'})")
 
-    print("\nTesting specific payouts:")
+    print("\nTesting specific payouts (adjusted):")
     test_lines = [
         (["7", "7", "7"], "Triple 7s"),
         (["bell", "bell", "bell"], "Triple Bells"),
@@ -118,3 +118,4 @@ if __name__ == '__main__':
     for line, name in test_lines:
         winnings, win_name_calc = calculate_winnings(line, 1)
         print(f"Test: {line} ({name}) -> Win: ${winnings} ({win_name_calc})")
+

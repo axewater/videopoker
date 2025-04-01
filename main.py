@@ -2,6 +2,7 @@
 import pygame
 import sys
 from typing import Dict, Any
+import os # Added for path joining
 
 # Local Imports
 import constants
@@ -65,7 +66,7 @@ def main():
             if hasattr(sound_obj, 'set_volume'):
                 sound_obj.set_volume(volume_level)
 
-    pygame.display.set_caption("Video Poker (Modular)")
+    pygame.display.set_caption("AceHigh Casino")
     clock = pygame.time.Clock()
 
     # --- Load Assets ---
@@ -85,6 +86,22 @@ def main():
     from renderer_functions.load_slot_images import load_slot_images
     slot_images = load_slot_images(constants.SLOTS_ASSET_PATH,
                                    (constants.SLOT_SYMBOL_WIDTH, constants.SLOT_SYMBOL_HEIGHT))
+
+    # --- Load Backdrop Image ---
+    backdrop_image = None
+    backdrop_path = os.path.join("assets", "menu", "backdrop.png")
+    try:
+        if os.path.exists(backdrop_path):
+            backdrop_image = pygame.image.load(backdrop_path).convert()
+            # Scale if necessary to fit the screen
+            if backdrop_image.get_size() != (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT):
+                backdrop_image = pygame.transform.scale(backdrop_image, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+            print(f"Loaded backdrop image from: {backdrop_path}")
+        else:
+            print(f"Warning: Backdrop image not found at {backdrop_path}. Menus will use default background.")
+    except pygame.error as e:
+        print(f"Warning: Failed to load backdrop image: {e}")
+
 
     # --- Initialize Game State Variables ---
     sounds = load_sounds(initial_sound_enabled)
@@ -174,6 +191,7 @@ def main():
         game_state = update_game(game_state, game_state_manager, sounds)
 
         # 4. Render Output
+        # Default fill, may be overwritten by backdrop
         screen.fill(constants.DARK_GREEN)
 
         render_data = {
@@ -192,12 +210,13 @@ def main():
         }
 
         if game_state['current_state'] == constants.STATE_TOP_MENU:
-            draw_top_menu(screen, fonts)
+            draw_top_menu(screen, fonts, backdrop_image) # Pass backdrop
         elif game_state['current_state'] == constants.STATE_GAME_SELECTION:
-            draw_game_selection_menu(screen, fonts, game_state_manager.money)
+            draw_game_selection_menu(screen, fonts, game_state_manager.money, backdrop_image) # Pass backdrop
         elif game_state['current_state'] == constants.STATE_SETTINGS:
-            draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'])
+            draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'], backdrop_image) # Pass backdrop
         elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
+            # Confirmation dialog overlays, so no backdrop applied here intentionally
             draw_confirm_exit(screen, fonts, game_state)
         elif game_state['current_state'] in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_PLAYER_TURN,
                                              constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
@@ -208,7 +227,7 @@ def main():
         elif game_state['current_state'] in [constants.STATE_SLOTS_IDLE, constants.STATE_SLOTS_SPINNING, constants.STATE_SLOTS_SHOWING_RESULT]:
             # Draw the slots screen
             draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager)
-        else:
+        else: # Draw/Multi Poker
             # Ensure render_data includes necessary items like money animation status
             render_data['money_animation_active'] = game_state.get('money_animation_active', False)
             render_data['money_animation_amount'] = game_state.get('money_animation_amount', 0)

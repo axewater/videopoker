@@ -22,7 +22,7 @@ def draw_confirm_exit(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
         message = "Restart Game?"
         message2 = "Your current money will be lost."
     else: # Default to 'EXIT' or unknown
-        message = "Abandon current hand?"
+        message = "Abandon current game?"
         message2 = "(Hand will be lost)"
 
     draw_text(surface, message, fonts['message'], constants.CONFIRM_BOX_RECT.centerx, constants.CONFIRM_BOX_RECT.centery - 30, constants.WHITE, center=True)
