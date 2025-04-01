@@ -21,6 +21,8 @@ from renderer_functions.draw_game_screen import draw_game_screen
 from renderer_functions.draw_settings_menu import draw_settings_menu
 from renderer_functions.draw_confirm_exit import draw_confirm_exit
 from renderer_functions.draw_blackjack_screen import draw_blackjack_screen
+from renderer_functions.draw_roulette_screen import draw_roulette_screen
+from renderer_functions.draw_text import draw_text
 
 # Game Logic Functions
 from game_functions.load_sounds import load_sounds
@@ -31,7 +33,9 @@ from game_functions.reset_game_variables import reset_game_variables
 from game_functions.start_blackjack_round import start_blackjack_round
 from game_functions.process_blackjack_action import process_blackjack_action
 from game_functions.resolve_blackjack_round import resolve_blackjack_round
-
+from game_functions.place_roulette_bet import place_roulette_bet
+from game_functions.determine_roulette_result import determine_roulette_result
+from game_functions.calculate_roulette_winnings import calculate_roulette_winnings
 
 def main():
     # --- Pygame Initialization ---
@@ -111,6 +115,10 @@ def main():
         'volume_changed': False,
         'previous_state_before_confirm': None,
         'confirm_action_type': None,
+        # --- Add Roulette Specific State ---
+        'roulette_bets': {},
+        'roulette_winning_number': None,
+        'roulette_spin_timer': 0,
     }
 
     # Apply initial volume
@@ -176,6 +184,8 @@ def main():
         elif game_state['current_state'] in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_PLAYER_TURN,
                                              constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
             draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
+        elif game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_SPINNING, constants.STATE_ROULETTE_RESULT]:
+            draw_roulette_screen(screen, fonts, game_state, game_state_manager)
         else:
             draw_game_screen(screen, fonts, card_images, render_data, game_state)
 

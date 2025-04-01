@@ -1,3 +1,4 @@
+# /constants.py
 import pygame
 
 # Display dimensions
@@ -54,6 +55,10 @@ STATE_BLACKJACK_IDLE = "BLACKJACK_IDLE" # Before bet/deal
 STATE_BLACKJACK_PLAYER_TURN = "BLACKJACK_PLAYER_TURN"
 STATE_BLACKJACK_DEALER_TURN = "BLACKJACK_DEALER_TURN" # Dealer plays out
 STATE_BLACKJACK_SHOWING_RESULT = "BLACKJACK_SHOWING_RESULT"
+# Roulette States
+STATE_ROULETTE_BETTING = "ROULETTE_BETTING"
+STATE_ROULETTE_SPINNING = "ROULETTE_SPINNING"
+STATE_ROULETTE_RESULT = "ROULETTE_RESULT"
 
 # Font Sizes
 MONEY_FONT_SIZE = 30
@@ -66,6 +71,7 @@ HOLD_FONT_SIZE = 24
 
 # Animation Constants
 MONEY_ANIMATION_DURATION = 60 # Frames (e.g., 2 seconds at 30 FPS)
+ROULETTE_SPIN_DURATION = 90 # Frames (e.g., 3 seconds at 30 FPS) for spin animation
 MONEY_ANIMATION_OFFSET_Y = 30 # Pixels below the main money display
 RESULT_FLASH_DURATION = 45 # Frames (e.g., 1.5 seconds at 30 FPS)
 RESULT_FLASH_INTERVAL = 5 # Frames between toggling visibility
@@ -83,6 +89,92 @@ SOUND_FILES = {
     "deal": "deal.mp3", "draw": "draw.mp3", "hold": "hold.mp3",
     "win": "win.mp3", "lose": "lose.mp3", "button": "button.mp3"
 }
+
+# Roulette Constants (Initial Setup)
+ROULETTE_WHEEL_NUMBERS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
+ROULETTE_RED_NUMBERS = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
+ROULETTE_BLACK_NUMBERS = {2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35}
+ROULETTE_GREEN_NUMBER = {0}
+
+# Roulette Colors
+ROULETTE_COLOR_RED = (200, 0, 0)
+ROULETTE_COLOR_BLACK = (50, 50, 50) # Dark grey for black numbers
+ROULETTE_COLOR_GREEN = (0, 150, 0)
+ROULETTE_TABLE_COLOR = (0, 100, 0) # Dark green table
+ROULETTE_CHIP_COLOR = (255, 255, 0) # Yellow chips for now
+ROULETTE_CHIP_RADIUS = 10
+ROULETTE_CHIP_TEXT_COLOR = BLACK
+
+# Roulette Layout Constants
+ROULETTE_GRID_X_START = 100
+ROULETTE_GRID_Y_START = 150
+ROULETTE_NUM_BOX_WIDTH = 40
+ROULETTE_NUM_BOX_HEIGHT = 40
+ROULETTE_GRID_SPACING = 5
+ROULETTE_NUM_COLS = 12
+ROULETTE_NUM_ROWS = 3
+
+# --- Calculate Roulette Rects ---
+ROULETTE_NUMBER_RECTS = {}
+# Zero (spans top of grid, before 1, 2, 3)
+zero_x = ROULETTE_GRID_X_START
+zero_y = ROULETTE_GRID_Y_START - ROULETTE_NUM_BOX_HEIGHT - ROULETTE_GRID_SPACING
+zero_width = ROULETTE_NUM_BOX_WIDTH
+zero_height = ROULETTE_NUM_BOX_HEIGHT * ROULETTE_NUM_ROWS + ROULETTE_GRID_SPACING * (ROULETTE_NUM_ROWS - 1)
+ROULETTE_NUMBER_RECTS[0] = pygame.Rect(zero_x, zero_y, zero_width, zero_height)
+
+# Numbers 1-36 (3 rows, 12 columns)
+number = 1
+for col in range(ROULETTE_NUM_COLS):
+    for row in range(ROULETTE_NUM_ROWS):
+        # Numbers go 3, 2, 1 vertically in each column
+        current_number = (col * ROULETTE_NUM_ROWS) + (ROULETTE_NUM_ROWS - row)
+        if current_number > 36: continue # Should not happen with 12 cols
+
+        rect_x = ROULETTE_GRID_X_START + zero_width + ROULETTE_GRID_SPACING + col * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING)
+        rect_y = ROULETTE_GRID_Y_START + row * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING)
+        ROULETTE_NUMBER_RECTS[current_number] = pygame.Rect(rect_x, rect_y, ROULETTE_NUM_BOX_WIDTH, ROULETTE_NUM_BOX_HEIGHT)
+
+# Outside Bets (Simplified Positions Below Grid)
+outside_bet_y = ROULETTE_GRID_Y_START + ROULETTE_NUM_ROWS * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING) + 10
+outside_bet_width = ROULETTE_NUM_BOX_WIDTH * 2 + ROULETTE_GRID_SPACING # Example width
+outside_bet_height = BUTTON_HEIGHT
+outside_bet_spacing = 20
+
+# --- Outside Bet Rects ---
+# Dozen Bets (Below numbers, spanning 4 number boxes each)
+dozen_width = 4 * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+dozen_y = ROULETTE_GRID_Y_START + ROULETTE_NUM_ROWS * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING) + ROULETTE_GRID_SPACING
+ROULETTE_BET_DOZEN1_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[1].left, dozen_y, dozen_width, outside_bet_height)
+ROULETTE_BET_DOZEN2_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[13].left, dozen_y, dozen_width, outside_bet_height)
+ROULETTE_BET_DOZEN3_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[25].left, dozen_y, dozen_width, outside_bet_height)
+
+# Column Bets (Right of numbers, spanning 3 number boxes vertically)
+col_width = outside_bet_height # Make them square-ish
+col_height = ROULETTE_NUM_ROWS * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+col_x = ROULETTE_NUMBER_RECTS[36].right + ROULETTE_GRID_SPACING
+ROULETTE_BET_COL1_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[1].top, col_width, col_height) # Aligns with row 1 (numbers 1, 4, ...)
+ROULETTE_BET_COL2_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[2].top, col_width, col_height) # Aligns with row 2 (numbers 2, 5, ...)
+ROULETTE_BET_COL3_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[3].top, col_width, col_height) # Aligns with row 3 (numbers 3, 6, ...)
+
+# Even Money Bets (Below Dozens, spanning 2 number boxes each)
+even_money_y = dozen_y + outside_bet_height + ROULETTE_GRID_SPACING
+even_money_width = 2 * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+
+ROULETTE_BET_LOW_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[1].left, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_EVEN_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[5].left, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_RED_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[9].left, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_BLACK_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[13].left, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_ODD_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[17].left, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_HIGH_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[21].left, even_money_y, even_money_width, outside_bet_height)
+
+# Spin Button Position (Example - Bottom Right)
+spin_button_x = SCREEN_WIDTH - BUTTON_WIDTH - 50
+spin_button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 50
+ROULETTE_SPIN_BUTTON_RECT = pygame.Rect(spin_button_x, spin_button_y, BUTTON_WIDTH, BUTTON_HEIGHT)
+
+# Clear Bets Button
+ROULETTE_CLEAR_BETS_BUTTON_RECT = pygame.Rect(spin_button_x - BUTTON_WIDTH - 20, spin_button_y, BUTTON_WIDTH, BUTTON_HEIGHT)
 
 # Card Rectangles (calculated here for potential use in multiple modules)
 CARD_RECTS = []
@@ -269,3 +361,7 @@ ACTION_CONFIRM_NO = "CONFIRM_NO"
 # Blackjack Actions
 ACTION_BLACKJACK_HIT = "BLACKJACK_HIT"
 ACTION_BLACKJACK_STAND = "BLACKJACK_STAND"
+# Roulette Actions
+ACTION_ROULETTE_BET = "ROULETTE_BET" # Payload will be bet details dict
+ACTION_ROULETTE_SPIN = "ROULETTE_SPIN"
+

@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
 import constants
+from .determine_roulette_result import determine_roulette_result
 from game_state import GameState
 
 def update_game(current_game_state: Dict[str, Any], game_state_manager: GameState) -> Dict[str, Any]:
@@ -34,6 +35,18 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             # Toggle visibility based on interval
             if flash_timer % constants.RESULT_FLASH_INTERVAL == 0:
                 new_state['result_message_flash_visible'] = not new_state.get('result_message_flash_visible', True)
+
+    # Update Roulette spin timer
+    if new_state['current_state'] == constants.STATE_ROULETTE_SPINNING:
+        spin_timer = new_state.get('roulette_spin_timer', 0)
+        spin_timer -= 1
+        if spin_timer <= 0:
+            # Spin finished, determine result and change state
+            result_state = determine_roulette_result(new_state, game_state_manager, current_game_state.get('sounds', {})) # Pass sounds dict
+            new_state.update(result_state)
+            new_state['roulette_spin_timer'] = 0 # Reset timer
+        else:
+            new_state['roulette_spin_timer'] = spin_timer
 
     # Check for game over condition if not already in game over state or main menu
     current_state_str = new_state['current_state']

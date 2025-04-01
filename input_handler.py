@@ -1,5 +1,5 @@
 import pygame
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any # Added Dict, Any
 
 import constants
 
@@ -105,5 +105,101 @@ class InputHandler:
                         actions.append((constants.ACTION_CONFIRM_YES, None))
                     elif constants.CONFIRM_NO_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CONFIRM_NO, None))
+
+                # --- Roulette Specific Input ---
+                elif current_state == constants.STATE_ROULETTE_BETTING:
+                    clicked_on_bet_area = False
+                    # Define outside bet areas using string keys
+                    outside_bet_definitions: Dict[str, Dict[str, Any]] = {
+                        'dozen_1': {'rect': constants.ROULETTE_BET_DOZEN1_RECT, 'type': 'dozen', 'value': '1'},
+                        'dozen_2': {'rect': constants.ROULETTE_BET_DOZEN2_RECT, 'type': 'dozen', 'value': '2'},
+                        'dozen_3': {'rect': constants.ROULETTE_BET_DOZEN3_RECT, 'type': 'dozen', 'value': '3'},
+                        'column_1': {'rect': constants.ROULETTE_BET_COL1_RECT, 'type': 'column', 'value': '1'},
+                        'column_2': {'rect': constants.ROULETTE_BET_COL2_RECT, 'type': 'column', 'value': '2'},
+                        'column_3': {'rect': constants.ROULETTE_BET_COL3_RECT, 'type': 'column', 'value': '3'},
+                        'half_low': {'rect': constants.ROULETTE_BET_LOW_RECT, 'type': 'half', 'value': 'low'},
+                        'parity_even': {'rect': constants.ROULETTE_BET_EVEN_RECT, 'type': 'parity', 'value': 'even'},
+                        'color_red': {'rect': constants.ROULETTE_BET_RED_RECT, 'type': 'color', 'value': 'red'},
+                        'color_black': {'rect': constants.ROULETTE_BET_BLACK_RECT, 'type': 'color', 'value': 'black'},
+                        'parity_odd': {'rect': constants.ROULETTE_BET_ODD_RECT, 'type': 'parity', 'value': 'odd'},
+                        'half_high': {'rect': constants.ROULETTE_BET_HIGH_RECT, 'type': 'half', 'value': 'high'},
+                    }
+
+                    # Check number bets (0-36)
+                    for number, rect in constants.ROULETTE_NUMBER_RECTS.items():
+                        if rect and rect.collidepoint(mouse_pos): # Ensure rect exists
+                            actions.append((constants.ACTION_ROULETTE_BET, {'type': 'number', 'value': number}))
+                            clicked_on_bet_area = True
+                            break # Process only one bet click
+
+                    # Check outside bets if no number was clicked
+                    if not clicked_on_bet_area:
+                        for bet_key, definition in outside_bet_definitions.items():
+                             rect = definition.get('rect')
+                             bet_info = {'type': definition.get('type'), 'value': definition.get('value')}
+                             if rect and rect.collidepoint(mouse_pos): # Ensure rect exists
+                                 actions.append((constants.ACTION_ROULETTE_BET, bet_info))
+                                 clicked_on_bet_area = True
+                                 break
+
+                    # Check buttons only if no bet area was clicked
+                    if not clicked_on_bet_area:
+                        if constants.ROULETTE_SPIN_BUTTON_RECT.collidepoint(mouse_pos):
+                             actions.append((constants.ACTION_ROULETTE_SPIN, None))
+                        # Check for ACTION_ROULETTE_CLEAR_BETS (assuming it exists in constants)
+                        elif constants.ROULETTE_CLEAR_BETS_BUTTON_RECT and constants.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
+                             # Look for ACTION_ROULETTE_CLEAR_BETS in constants.py - if it's not there, add it or handle differently
+                             # Assuming ACTION_ROULETTE_CLEAR_BETS exists:
+                             actions.append(('ROULETTE_CLEAR_BETS', None)) # Use the actual constant name
+                        elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                             actions.append((constants.ACTION_RETURN_TO_MENU, None))
+
+                elif current_state == constants.STATE_ROULETTE_SPINNING:
+                    # Ignore most clicks during spin, except perhaps an emergency exit?
+                    # For now, only allow returning to menu (will be handled in process_input)
+                    if constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                         actions.append((constants.ACTION_RETURN_TO_MENU, None))
+
+                elif current_state == constants.STATE_ROULETTE_RESULT:
+                     # Allow clearing bets or returning to menu after result
+                    # Check for ACTION_ROULETTE_CLEAR_BETS
+                    if constants.ROULETTE_CLEAR_BETS_BUTTON_RECT and constants.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
+                         # Assuming ACTION_ROULETTE_CLEAR_BETS exists:
+                         actions.append(('ROULETTE_CLEAR_BETS', None)) # Use the actual constant name
+                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                         actions.append((constants.ACTION_RETURN_TO_MENU, None))
+                    # Also allow placing new bets immediately (acts like clear + place)
+                    else:
+                        clicked_on_bet_area = False
+                        # Copied betting logic from STATE_ROULETTE_BETTING for convenience
+                        # Define outside bet areas using string keys
+                        outside_bet_definitions: Dict[str, Dict[str, Any]] = {
+                            'dozen_1': {'rect': constants.ROULETTE_BET_DOZEN1_RECT, 'type': 'dozen', 'value': '1'},
+                            'dozen_2': {'rect': constants.ROULETTE_BET_DOZEN2_RECT, 'type': 'dozen', 'value': '2'},
+                            'dozen_3': {'rect': constants.ROULETTE_BET_DOZEN3_RECT, 'type': 'dozen', 'value': '3'},
+                            'column_1': {'rect': constants.ROULETTE_BET_COL1_RECT, 'type': 'column', 'value': '1'},
+                            'column_2': {'rect': constants.ROULETTE_BET_COL2_RECT, 'type': 'column', 'value': '2'},
+                            'column_3': {'rect': constants.ROULETTE_BET_COL3_RECT, 'type': 'column', 'value': '3'},
+                            'half_low': {'rect': constants.ROULETTE_BET_LOW_RECT, 'type': 'half', 'value': 'low'},
+                            'parity_even': {'rect': constants.ROULETTE_BET_EVEN_RECT, 'type': 'parity', 'value': 'even'},
+                            'color_red': {'rect': constants.ROULETTE_BET_RED_RECT, 'type': 'color', 'value': 'red'},
+                            'color_black': {'rect': constants.ROULETTE_BET_BLACK_RECT, 'type': 'color', 'value': 'black'},
+                            'parity_odd': {'rect': constants.ROULETTE_BET_ODD_RECT, 'type': 'parity', 'value': 'odd'},
+                            'half_high': {'rect': constants.ROULETTE_BET_HIGH_RECT, 'type': 'half', 'value': 'high'},
+                        }
+                        for number, rect in constants.ROULETTE_NUMBER_RECTS.items():
+                            if rect and rect.collidepoint(mouse_pos):
+                                actions.append((constants.ACTION_ROULETTE_BET, {'type': 'number', 'value': number}))
+                                clicked_on_bet_area = True
+                                break
+                        if not clicked_on_bet_area:
+                             for bet_key, definition in outside_bet_definitions.items():
+                                 rect = definition.get('rect')
+                                 bet_info = {'type': definition.get('type'), 'value': definition.get('value')}
+                                 if rect and rect.collidepoint(mouse_pos):
+                                     actions.append((constants.ACTION_ROULETTE_BET, bet_info))
+                                     clicked_on_bet_area = True
+                                     break
+
 
         return actions
