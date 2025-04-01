@@ -34,6 +34,7 @@ YELLOW = (255, 255, 0) # For highlighting
 DARK_GREEN = (0, 100, 0)
 BUTTON_OFF = (100, 100, 100)
 BUTTON_ON = (255, 215, 0) # Goldish color for held button
+GREY = (128, 128, 128) # Added for wheel drawing
 
 # Game States
 STATE_TOP_MENU = "TOP_MENU" # New top-level menu
@@ -57,7 +58,7 @@ STATE_BLACKJACK_DEALER_TURN = "BLACKJACK_DEALER_TURN" # Dealer plays out
 STATE_BLACKJACK_SHOWING_RESULT = "BLACKJACK_SHOWING_RESULT"
 # Roulette States
 STATE_ROULETTE_BETTING = "ROULETTE_BETTING"
-STATE_ROULETTE_SPINNING = "ROULETTE_SPINNING"
+STATE_ROULETTE_SPINNING = "ROULETTE_SPINNING" # Includes pause phase now
 STATE_ROULETTE_RESULT = "ROULETTE_RESULT"
 
 # Font Sizes
@@ -71,7 +72,11 @@ HOLD_FONT_SIZE = 24
 
 # Animation Constants
 MONEY_ANIMATION_DURATION = 60 # Frames (e.g., 2 seconds at 30 FPS)
-ROULETTE_SPIN_DURATION = 90 # Frames (e.g., 3 seconds at 30 FPS) for spin animation
+# ROULETTE_SPIN_DURATION = 90 # Frames (e.g., 3 seconds at 30 FPS) for spin animation
+ROULETTE_SPIN_DURATION = 180 # Increased duration (e.g., 6 seconds at 30 FPS)
+ROULETTE_RESULT_PAUSE_DURATION = 30 # Frames to pause after spin (e.g., 1 second at 30 FPS)
+ROULETTE_FLASH_COUNT = 3 # Number of times the winning slot flashes
+ROULETTE_FLASH_INTERVAL = 10 # Frames for one flash state (on/off) - Total flash cycle = 2*INTERVAL
 MONEY_ANIMATION_OFFSET_Y = 30 # Pixels below the main money display
 RESULT_FLASH_DURATION = 45 # Frames (e.g., 1.5 seconds at 30 FPS)
 RESULT_FLASH_INTERVAL = 5 # Frames between toggling visibility
@@ -104,6 +109,7 @@ ROULETTE_TABLE_COLOR = (0, 100, 0) # Dark green table
 ROULETTE_CHIP_COLOR = (255, 255, 0) # Yellow chips for now
 ROULETTE_CHIP_RADIUS = 10
 ROULETTE_CHIP_TEXT_COLOR = BLACK
+ROULETTE_FLASH_COLOR = YELLOW # Color for flashing winning slot
 
 # Roulette Layout Constants
 ROULETTE_GRID_X_START = 50 # Adjusted for more space

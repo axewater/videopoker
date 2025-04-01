@@ -1,3 +1,4 @@
+# /main.py
 import pygame
 import sys
 from typing import Dict, Any
@@ -76,7 +77,7 @@ def main():
         'game_over_large': get_font(64),
         'game_over_medium': get_font(32),
     }
-    constants.GREY = (128, 128, 128) # Add this if needed by wheel drawing
+    # constants.GREY = (128, 128, 128) # Removed, added directly to constants.py
     card_images = load_card_images(constants.CARD_ASSET_PATH)
 
     # --- Initialize Game State Variables ---
@@ -121,6 +122,10 @@ def main():
         'roulette_bets': {},
         'roulette_winning_number': None,
         'roulette_spin_timer': 0,
+        'roulette_pause_timer': 0, # Added for pause after spin
+        'winning_slot_flash_active': False, # Added for slot flashing
+        'winning_slot_flash_count': 0, # Added for slot flashing
+        'winning_slot_flash_visible': True, # Added for slot flashing
     }
 
     # Apply initial volume
@@ -187,7 +192,7 @@ def main():
                                              constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
             draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
         elif game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_SPINNING, constants.STATE_ROULETTE_RESULT]:
-            # draw_roulette_screen now handles drawing the table OR the spinning wheel based on the state
+            # draw_roulette_screen handles drawing table OR wheel based on state
             draw_roulette_screen(screen, fonts, game_state, game_state_manager)
         else:
             # Ensure render_data includes necessary items like money animation status

@@ -1,3 +1,4 @@
+# /game_functions/reset_game_variables.py
 from typing import Dict, Any, List, Optional
 
 import constants
@@ -27,6 +28,10 @@ def reset_game_variables() -> Dict[str, Any]:
         'roulette_bets': {},
         'roulette_winning_number': None,
         'roulette_spin_timer': 0,
+        'roulette_pause_timer': 0, # Reset pause timer
+        'winning_slot_flash_active': False, # Reset flash active flag
+        'winning_slot_flash_count': 0, # Reset flash count
+        'winning_slot_flash_visible': True, # Reset flash visibility
         # Note: deck and current_state are typically handled by the calling function
         # Note: game_state_manager (money) is NOT reset here
     }

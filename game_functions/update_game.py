@@ -39,37 +39,61 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             if flash_timer % constants.RESULT_FLASH_INTERVAL == 0:
                 new_state['result_message_flash_visible'] = not new_state.get('result_message_flash_visible', True)
 
-    # Update Roulette spin timer
+    # Update Roulette spin/pause/flash logic
     if new_state['current_state'] == constants.STATE_ROULETTE_SPINNING:
         spin_timer = new_state.get('roulette_spin_timer', 0)
-        spin_timer -= 1
-        if spin_timer <= 0:
-            # Spin finished, determine result and change state
-            # *** Pass sounds dictionary to determine_roulette_result ***
-            result_state = determine_roulette_result(new_state, game_state_manager, sounds)
-            new_state.update(result_state)
-            new_state['roulette_spin_timer'] = 0 # Reset timer
-        else:
+        pause_timer = new_state.get('roulette_pause_timer', 0)
+
+        if spin_timer > 0:
+            # Still spinning
+            spin_timer -= 1
             new_state['roulette_spin_timer'] = spin_timer
+            if spin_timer == 0:
+                # Spin just finished, start pause and flashing
+                new_state['roulette_pause_timer'] = constants.ROULETTE_RESULT_PAUSE_DURATION
+                new_state['winning_slot_flash_active'] = True
+                new_state['winning_slot_flash_count'] = constants.ROULETTE_FLASH_COUNT * 2 # Total on/off cycles
+                new_state['winning_slot_flash_visible'] = True # Start visible
+
+        elif pause_timer > 0:
+            # In pause/flash phase
+            pause_timer -= 1
+            new_state['roulette_pause_timer'] = pause_timer
+
+            # Update flashing state
+            flash_count = new_state.get('winning_slot_flash_count', 0)
+            if flash_count > 0:
+                 # Decrement count every interval
+                 if pause_timer % constants.ROULETTE_FLASH_INTERVAL == 0:
+                     new_state['winning_slot_flash_visible'] = not new_state.get('winning_slot_flash_visible', True)
+                     flash_count -= 1
+                     new_state['winning_slot_flash_count'] = flash_count
+                 if flash_count == 0: # Flashing finished
+                      new_state['winning_slot_flash_active'] = False
+                      new_state['winning_slot_flash_visible'] = True # Ensure visible at end
+
+            if pause_timer == 0:
+                # Pause finished, determine result and change state
+                result_state = determine_roulette_result(new_state, game_state_manager, sounds)
+                new_state.update(result_state)
+                # Reset flashing flags fully just in case
+                new_state['winning_slot_flash_active'] = False
+                new_state['winning_slot_flash_visible'] = True
+                new_state['winning_slot_flash_count'] = 0
 
     # Check for game over condition (logic remains the same)
-    # ... (game over check as before) ...
     current_state_str = new_state['current_state']
-    # Simplified check: Is the player in a state where they might need to start a new paid round?
     needs_money_check_states = [
         constants.STATE_DRAW_POKER_SHOWING_RESULT,
         constants.STATE_MULTI_POKER_SHOWING_RESULT,
         constants.STATE_BLACKJACK_SHOWING_RESULT,
-        # Roulette doesn't automatically start a new round, so GAME OVER isn't triggered this way
     ]
     if current_state_str in needs_money_check_states:
         is_multi = current_state_str == constants.STATE_MULTI_POKER_SHOWING_RESULT
         cost_next_game = constants.NUM_MULTI_HANDS if is_multi else 1
         if not game_state_manager.can_afford_bet(cost_next_game):
-            # Check if already game over to prevent message spam
             if new_state['current_state'] != constants.STATE_GAME_OVER:
                  new_state['message'] = f"GAME OVER! Need ${cost_next_game} for next round."
                  new_state['current_state'] = constants.STATE_GAME_OVER
-
 
     return new_state
