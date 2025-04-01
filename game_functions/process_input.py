@@ -1,4 +1,5 @@
 from typing import List, Tuple, Optional, Dict, Any
+import pygame
 
 import constants
 from game_state import GameState
@@ -8,7 +9,7 @@ from .process_drawing import process_drawing
 from .process_multi_drawing import process_multi_drawing
 from .reset_game_variables import reset_game_variables
 
-def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any]) -> Dict[str, Any]:
+def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any], screen: Optional[pygame.Surface] = None, fonts: Optional[Dict[str, pygame.font.Font]] = None) -> Dict[str, Any]:
     """
     Processes actions received from the InputHandler and updates the game state.
     Returns a dictionary containing the potentially modified game state variables.
@@ -19,34 +20,80 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
 
     for action, payload in actions:
         if action == constants.ACTION_QUIT:
-            sounds["button"].play() # Optional: sound on quit
+            if sounds.get("button"): sounds["button"].play() # Optional: sound on quit
             running = False
             break # Exit loop immediately on quit
 
+        # --- Top Menu Actions ---
+        elif action == constants.ACTION_GOTO_PLAY:
+            if new_game_state['current_state'] == constants.STATE_TOP_MENU:
+                if sounds.get("button"): sounds["button"].play()
+                new_game_state['current_state'] = constants.STATE_GAME_SELECTION
+
+        elif action == constants.ACTION_GOTO_SETTINGS:
+            if new_game_state['current_state'] == constants.STATE_TOP_MENU:
+                if sounds.get("button"): sounds["button"].play()
+                new_game_state['current_state'] = constants.STATE_SETTINGS
+
+        # --- Settings Actions ---
+        elif action == constants.ACTION_TOGGLE_SOUND:
+            if new_game_state['current_state'] == constants.STATE_SETTINGS:
+                new_game_state['sound_enabled'] = not new_game_state['sound_enabled']
+                new_game_state['sound_setting_changed'] = True # Flag to reload sounds in main loop
+                # Play button sound *after* potentially enabling sound
+                if new_game_state['sound_enabled'] and sounds.get("button"): sounds["button"].play()
+
+        elif action == constants.ACTION_RETURN_TO_TOP_MENU: # From Settings or Game Selection
+            if new_game_state['current_state'] in [constants.STATE_SETTINGS, constants.STATE_GAME_SELECTION]:
+                if sounds.get("button"): sounds["button"].play()
+                new_game_state['current_state'] = constants.STATE_TOP_MENU
+
+        # --- Game Selection Actions ---
         elif action == constants.ACTION_CHOOSE_DRAW_POKER:
-            if new_game_state['current_state'] == constants.STATE_MAIN_MENU:
-                sounds["button"].play()
-                round_state = start_draw_poker_round(game_state_manager, sounds)
-                new_game_state.update(round_state) # Update state with results
-
-        elif action == constants.ACTION_CHOOSE_MULTI_POKER:
-            if new_game_state['current_state'] == constants.STATE_MAIN_MENU:
-                sounds["button"].play()
-                round_state = start_multi_poker_round(game_state_manager, sounds)
-                new_game_state.update(round_state)
-
-        elif action == constants.ACTION_RETURN_TO_MENU:
-            if new_game_state['current_state'] != constants.STATE_MAIN_MENU:
-                sounds["button"].play()
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # Transition to IDLE state, don't start round yet
                 reset_state = reset_game_variables()
                 new_game_state.update(reset_state)
-                new_game_state['message'] = "" # Clear any lingering game messages
-                new_game_state['current_state'] = constants.STATE_MAIN_MENU
+                new_game_state['current_state'] = constants.STATE_DRAW_POKER_IDLE
+                new_game_state['message'] = "Click DEAL to start ($1)"
+
+        elif action == constants.ACTION_CHOOSE_MULTI_POKER:
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # Transition to IDLE state
+                reset_state = reset_game_variables()
+                new_game_state.update(reset_state)
+                new_game_state['current_state'] = constants.STATE_MULTI_POKER_IDLE
+                new_game_state['message'] = f"Click DEAL to start (${constants.NUM_MULTI_HANDS})"
+
+        elif action == constants.ACTION_RETURN_TO_MENU:
+            # This action now means "Return to Game Selection Menu" from a game
+            if new_game_state['current_state'] not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT]:
+                if sounds.get("button"): sounds["button"].play()
+                # Check if player is in the middle of a hand (after deal, before draw)
+                if new_game_state['current_state'] in [constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
+                    new_game_state['confirm_exit_destination'] = constants.STATE_GAME_SELECTION # Store where to go
+                    new_game_state['previous_state_before_confirm'] = new_game_state['current_state'] # Store current state to return to if 'No'
+                    new_game_state['current_state'] = constants.STATE_CONFIRM_EXIT
+                else: # Not in middle of hand, just go back
+                    reset_state = reset_game_variables()
+                    new_game_state.update(reset_state)
+                    new_game_state['message'] = "" # Clear any lingering game messages
+                    new_game_state['current_state'] = constants.STATE_GAME_SELECTION
 
         elif action == constants.ACTION_DEAL_DRAW:
             current_state_str = new_game_state['current_state']
-            if current_state_str == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
-                sounds["button"].play()
+            if current_state_str == constants.STATE_DRAW_POKER_IDLE: # Start new Draw Poker game
+                if sounds.get("button"): sounds["button"].play()
+                round_state = start_draw_poker_round(game_state_manager, sounds)
+                new_game_state.update(round_state)
+            elif current_state_str == constants.STATE_MULTI_POKER_IDLE: # Start new Multi Poker game
+                if sounds.get("button"): sounds["button"].play()
+                round_state = start_multi_poker_round(game_state_manager, sounds)
+                new_game_state.update(round_state)
+            elif current_state_str == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD: # Process Draw Poker draw
+                if sounds.get("button"): sounds["button"].play()
                 draw_results = process_drawing(
                     new_game_state['hand'],
                     new_game_state['held_indices'],
@@ -55,8 +102,8 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                     sounds
                 )
                 new_game_state.update(draw_results)
-            elif current_state_str == constants.STATE_MULTI_POKER_WAITING_FOR_HOLD:
-                 sounds["button"].play()
+            elif current_state_str == constants.STATE_MULTI_POKER_WAITING_FOR_HOLD: # Process Multi Poker draw
+                 if sounds.get("button"): sounds["button"].play()
                  multi_draw_results = process_multi_drawing(
                      new_game_state['hand'],
                      new_game_state['held_indices'],
@@ -64,8 +111,8 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                      sounds
                  )
                  new_game_state.update(multi_draw_results)
-            elif current_state_str == constants.STATE_DRAW_POKER_SHOWING_RESULT:
-                sounds["button"].play()
+            elif current_state_str == constants.STATE_DRAW_POKER_SHOWING_RESULT: # Start next Draw Poker hand
+                if sounds.get("button"): sounds["button"].play()
                 # Check if can play before starting next round
                 if game_state_manager.money >= 1: # Cost for next draw poker game
                     round_state = start_draw_poker_round(game_state_manager, sounds)
@@ -76,8 +123,8 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                     new_game_state.update(reset_state)
                     new_game_state['message'] = "GAME OVER! Not enough money."
                     new_game_state['current_state'] = constants.STATE_GAME_OVER
-            elif current_state_str == constants.STATE_MULTI_POKER_SHOWING_RESULT:
-                 sounds["button"].play()
+            elif current_state_str == constants.STATE_MULTI_POKER_SHOWING_RESULT: # Start next Multi Poker hand
+                 if sounds.get("button"): sounds["button"].play()
                  cost_next_multi = constants.NUM_MULTI_HANDS
                  if game_state_manager.money >= cost_next_multi:
                      round_state = start_multi_poker_round(game_state_manager, sounds)
@@ -97,25 +144,43 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                     held_indices = new_game_state['held_indices']
                     if index in held_indices:
                         held_indices.remove(index)
-                        sounds["hold"].play()
+                        if sounds.get("hold"): sounds["hold"].play()
                     else:
                         held_indices.append(index)
                         held_indices.sort() # Keep sorted for consistency
-                        sounds["hold"].play()
+                        if sounds.get("hold"): sounds["hold"].play()
                     new_game_state['held_indices'] = held_indices # Update state
 
         elif action == constants.ACTION_PLAY_AGAIN:
              if new_game_state['current_state'] == constants.STATE_GAME_OVER:
-                 sounds["button"].play()
+                 if sounds.get("button"): sounds["button"].play()
                  # Reset money by re-initializing the manager
-                 # This function shouldn't re-init, main loop should handle this logic maybe?
-                 # For now, let's just reset state and go to menu. Money reset needs to happen in main.
                  reset_state = reset_game_variables()
                  new_game_state.update(reset_state)
-                 new_game_state['current_state'] = constants.STATE_MAIN_MENU
+                 new_game_state['current_state'] = constants.STATE_TOP_MENU # Go back to top menu
                  # Signal that money needs reset? Or handle in main loop based on PLAY_AGAIN action.
                  new_game_state['needs_money_reset'] = True # Add a flag
 
+        # --- Confirmation Actions ---
+        elif action == constants.ACTION_CONFIRM_YES:
+            if new_game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
+                if sounds.get("button"): sounds["button"].play()
+                destination = new_game_state.get('confirm_exit_destination', constants.STATE_GAME_SELECTION) # Default safety
+                reset_state = reset_game_variables() # Reset hand, holds etc.
+                new_game_state.update(reset_state)
+                new_game_state['message'] = ""
+                new_game_state['current_state'] = destination
+                new_game_state['confirm_exit_destination'] = None # Clear destination
+                new_game_state['previous_state_before_confirm'] = None # Clear previous state
+
+        elif action == constants.ACTION_CONFIRM_NO:
+            if new_game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
+                if sounds.get("button"): sounds["button"].play()
+                # Return to the state we were in before showing the confirmation
+                previous_state = new_game_state.get('previous_state_before_confirm', constants.STATE_DRAW_POKER_WAITING_FOR_HOLD) # Default safety
+                new_game_state['current_state'] = previous_state
+                new_game_state['confirm_exit_destination'] = None # Clear destination
+                new_game_state['previous_state_before_confirm'] = None # Clear previous state
 
     new_game_state['running'] = running # Update running state
     return new_game_state

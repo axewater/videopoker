@@ -19,7 +19,8 @@ def start_multi_poker_round(game_state_manager: GameState, sounds: Dict[str, Any
         updated_state['deck'] = deck # Store the deck
         updated_state['message'] = f"Click HOLD buttons (Cost: {cost}), then click DRAW"
         updated_state['current_state'] = constants.STATE_MULTI_POKER_WAITING_FOR_HOLD
-        sounds["deal"].play()
+        if sounds.get("deal"):
+            sounds["deal"].play()
         return updated_state
     else:
         # Game Over state

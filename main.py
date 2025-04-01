@@ -14,8 +14,11 @@ from poker_rules import HandRank # Keep for type hinting
 # Renderer Functions
 from renderer_functions.get_font import get_font
 from renderer_functions.load_card_images import load_card_images
-from renderer_functions.draw_main_menu import draw_main_menu
+from renderer_functions.draw_top_menu import draw_top_menu
+from renderer_functions.draw_game_selection_menu import draw_game_selection_menu
 from renderer_functions.draw_game_screen import draw_game_screen
+from renderer_functions.draw_settings_menu import draw_settings_menu
+from renderer_functions.draw_confirm_exit import draw_confirm_exit
 
 # Game Logic Functions
 from game_functions.load_sounds import load_sounds
@@ -28,14 +31,15 @@ from game_functions.reset_game_variables import reset_game_variables
 def main():
     # --- Pygame Initialization ---
     pygame.init()
-    sound_enabled = True
-    try:
+    try: # Try initializing mixer early
         pygame.mixer.init()
         print("Sound system initialized.")
     except pygame.error as e:
         print(f"Warning: Failed to initialize sound system: {e}")
         print("Game will run without sound.")
-        sound_enabled = False
+        initial_sound_enabled = False
+    else:
+        initial_sound_enabled = True
 
     screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
     pygame.display.set_caption("Video Poker (Modular)")
@@ -54,16 +58,16 @@ def main():
         'game_over_medium': get_font(32),
     }
     card_images = load_card_images(constants.CARD_ASSET_PATH)
-    sounds = load_sounds(sound_enabled)
+    sounds = load_sounds(initial_sound_enabled)
 
     # --- Initialize Game Components ---
     input_handler = InputHandler()
     game_state_manager = GameState(starting_money=10)
 
     # --- Initialize Game State Variables ---
-    # Use a dictionary to hold the mutable game state
+    # Initial sound setting (can be overridden by settings menu)
     game_state: Dict[str, Any] = {
-        'current_state': constants.STATE_MAIN_MENU,
+        'current_state': constants.STATE_TOP_MENU,
         'hand': [],
         'multi_hands': [],
         'multi_results': [],
@@ -75,9 +79,16 @@ def main():
         'money_animation_active': False,
         'money_animation_timer': 0,
         'money_animation_amount': 0,
+        'result_message_flash_active': False,
+        'result_message_flash_timer': 0,
+        'result_message_flash_visible': True,
         'deck': Deck(), # Start with a deck, even if unused initially
         'running': True,
+        'sound_enabled': initial_sound_enabled, # Add sound setting
         'needs_money_reset': False, # Flag for play again action
+        'confirm_exit_destination': None, # State to go to after confirming exit
+        'sound_setting_changed': False, # Flag to reload sounds if setting changed
+        'previous_state_before_confirm': None, # Store previous state for confirmation dialog
     }
 
     # --- Main Game Loop ---
@@ -86,7 +97,7 @@ def main():
         actions = input_handler.handle_events(game_state['current_state'])
 
         # 2. Process Input Actions -> Update State
-        game_state = process_input(actions, game_state, game_state_manager, sounds)
+        game_state = process_input(actions, game_state, game_state_manager, sounds, screen, fonts)
 
         # Handle specific state changes triggered by input processing
         if game_state.get('needs_money_reset', False):
@@ -96,6 +107,11 @@ def main():
         # Check if quit action was processed
         if not game_state['running']:
             break
+
+        # Reload sounds if setting changed
+        if game_state.get('sound_setting_changed', False):
+            sounds = load_sounds(game_state['sound_enabled'])
+            game_state['sound_setting_changed'] = False # Reset flag
 
         # 3. Update Game Logic (Timers, Game Over Checks) -> Update State
         game_state = update_game(game_state, game_state_manager)
@@ -118,11 +134,17 @@ def main():
             'money_animation_amount': game_state['money_animation_amount'],
         }
 
-        if game_state['current_state'] == constants.STATE_MAIN_MENU:
-            draw_main_menu(screen, fonts)
+        if game_state['current_state'] == constants.STATE_TOP_MENU:
+            draw_top_menu(screen, fonts)
+        elif game_state['current_state'] == constants.STATE_GAME_SELECTION:
+            draw_game_selection_menu(screen, fonts)
+        elif game_state['current_state'] == constants.STATE_SETTINGS:
+            draw_settings_menu(screen, fonts, game_state['sound_enabled'])
+        elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
+            draw_confirm_exit(screen, fonts)
         else:
             # Draw the main game screen elements using the combined data
-            draw_game_screen(screen, fonts, card_images, render_data)
+            draw_game_screen(screen, fonts, card_images, render_data, game_state)
 
         pygame.display.flip() # Update the full screen
 

@@ -59,22 +59,33 @@ def process_drawing(hand: List[Card], held_indices: List[int], deck: Deck, game_
     if payout > 0:
         winnings = payout * 1 # Payout is based on a 1-unit bet
         updated_state['result_message'] = f"WINNER! {hand_name}! +${winnings}"
-        sounds["win"].play() # Play win sound
+        if sounds.get("win"):
+            sounds["win"].play() # Play win sound
         game_state_manager.add_winnings(winnings) # Update money directly
         # Trigger money animation
         updated_state['money_animation_active'] = True
         updated_state['money_animation_amount'] = winnings
         updated_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        # Trigger result message flashing
+        updated_state['result_message_flash_active'] = True
+        updated_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION # Use a constant
+        updated_state['result_message_flash_visible'] = True
     else:
         updated_state['result_message'] = f"Result: {hand_name}. No win."
-        sounds["lose"].play() # Play lose sound
+        if sounds.get("lose"):
+            sounds["lose"].play() # Play lose sound
         # Ensure animation state is off if no win
         updated_state['money_animation_active'] = False
         updated_state['money_animation_amount'] = 0
         updated_state['money_animation_timer'] = 0
+        # Ensure flashing is off if no win
+        updated_state['result_message_flash_active'] = False
+        updated_state['result_message_flash_timer'] = 0
+        updated_state['result_message_flash_visible'] = True
 
 
-    sounds["draw"].play() # Play draw sound (after cards are replaced)
+    if sounds.get("draw"):
+        sounds["draw"].play() # Play draw sound (after cards are replaced)
     updated_state['message'] = "" # Clear the action message
     updated_state['current_state'] = constants.STATE_DRAW_POKER_SHOWING_RESULT
     updated_state['deck'] = deck # Pass back the potentially modified deck

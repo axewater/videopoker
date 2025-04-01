@@ -18,7 +18,8 @@ def start_draw_poker_round(game_state_manager: GameState, sounds: Dict[str, Any]
         updated_state['deck'] = deck # Store the deck in the state
         updated_state['message'] = "Click HOLD buttons, then click DRAW"
         updated_state['current_state'] = constants.STATE_DRAW_POKER_WAITING_FOR_HOLD
-        sounds["deal"].play() # Play deal sound
+        if sounds.get("deal"): # Check if sound object exists
+            sounds["deal"].play() # Play deal sound
         return updated_state
     else:
         # Game Over state

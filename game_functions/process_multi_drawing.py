@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import constants
 from card import Card
@@ -110,22 +110,33 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
 
     if total_winnings > 0:
         updated_state['result_message'] = f"WINNER! Total: +${total_winnings}"
-        sounds["win"].play()
+        if sounds.get("win"):
+            sounds["win"].play()
         game_state_manager.add_winnings(total_winnings) # Update money directly
         # Trigger money animation for total amount
         updated_state['money_animation_active'] = True
         updated_state['money_animation_amount'] = total_winnings
         updated_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        # Trigger result message flashing
+        updated_state['result_message_flash_active'] = True
+        updated_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION # Use a constant
+        updated_state['result_message_flash_visible'] = True
     else:
         updated_state['result_message'] = "No winning hands."
-        sounds["lose"].play()
+        if sounds.get("lose"):
+            sounds["lose"].play()
         # Ensure animation state is off if no win
         updated_state['money_animation_active'] = False
         updated_state['money_animation_amount'] = 0
         updated_state['money_animation_timer'] = 0
+        # Ensure flashing is off if no win
+        updated_state['result_message_flash_active'] = False
+        updated_state['result_message_flash_timer'] = 0
+        updated_state['result_message_flash_visible'] = True
 
 
-    sounds["draw"].play() # Play draw sound once after all hands are set
+    if sounds.get("draw"):
+        sounds["draw"].play() # Play draw sound once after all hands are set
     updated_state['message'] = "" # Clear action message
     updated_state['current_state'] = constants.STATE_MULTI_POKER_SHOWING_RESULT
     # Base hand remains the same, it's just used for holds

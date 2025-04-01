@@ -19,6 +19,10 @@ def reset_game_variables() -> Dict[str, Any]:
         'money_animation_active': False,
         'money_animation_timer': 0,
         'money_animation_amount': 0,
+        # Result message flashing state
+        'result_message_flash_active': False,
+        'result_message_flash_timer': 0,
+        'result_message_flash_visible': True,
         # Note: deck and current_state are typically handled by the calling function
         # Note: game_state_manager (money) is NOT reset here
     }

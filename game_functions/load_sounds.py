@@ -8,7 +8,7 @@ from .dummy_sound import DummySound # Relative import
 def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySound]:
     """Loads sound effects from files."""
     sounds = {}
-    # Ensure all expected sound keys exist, even if sound is disabled or files are missing
+    # If sound is globally disabled, return dummy sounds immediately
     if not sound_enabled:
         for name in constants.SOUND_FILES.keys():
             sounds[name] = DummySound()
@@ -16,7 +16,7 @@ def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySoun
         return sounds
 
     # Initialize mixer if not already done (safe to call multiple times)
-    if not pygame.mixer.get_init():
+    if sound_enabled and not pygame.mixer.get_init():
         try:
             pygame.mixer.init()
             print("Sound system initialized by load_sounds.")
@@ -26,7 +26,6 @@ def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySoun
             for name in constants.SOUND_FILES.keys():
                 sounds[name] = DummySound()
             return sounds
-
 
     for name, filename in constants.SOUND_FILES.items():
         path = os.path.join(constants.SOUND_ASSET_PATH, filename)
