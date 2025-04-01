@@ -11,7 +11,7 @@ import config_layout_cards as layout_cards # For card dimensions
 
 # --- Card Positions ---
 # Player Hand
-PLAYER_HAND_Y = display.SCREEN_HEIGHT // 2 + 30
+PLAYER_HAND_Y = (display.SCREEN_HEIGHT // 2 + 30) - 100 # Moved up 100px
 PLAYER_HAND_X_START = display.SCREEN_WIDTH // 2 - layout_cards.CARD_WIDTH * 1.5 - layout_cards.CARD_SPACING * 1.0 # Centered-ish left
 PLAYER_CARD_RECTS = [
     pygame.Rect(PLAYER_HAND_X_START + i * (layout_cards.CARD_WIDTH + layout_cards.CARD_SPACING), PLAYER_HAND_Y, layout_cards.CARD_WIDTH, layout_cards.CARD_HEIGHT)
@@ -19,7 +19,7 @@ PLAYER_CARD_RECTS = [
 ]
 
 # Banker Hand
-BANKER_HAND_Y = PLAYER_HAND_Y
+BANKER_HAND_Y = (display.SCREEN_HEIGHT // 2 + 30) - 100 # Moved up 100px
 BANKER_HAND_X_START = display.SCREEN_WIDTH // 2 + layout_cards.CARD_WIDTH * 0.5 + layout_cards.CARD_SPACING * 1.0 # Centered-ish right
 BANKER_CARD_RECTS = [
     pygame.Rect(BANKER_HAND_X_START + i * (layout_cards.CARD_WIDTH + layout_cards.CARD_SPACING), BANKER_HAND_Y, layout_cards.CARD_WIDTH, layout_cards.CARD_HEIGHT)
@@ -29,7 +29,7 @@ BANKER_CARD_RECTS = [
 # --- Betting Areas ---
 BET_AREA_WIDTH = 180
 BET_AREA_HEIGHT = 80
-BET_AREA_Y = PLAYER_HAND_Y - BET_AREA_HEIGHT - 40 # Above hands
+BET_AREA_Y = ((display.SCREEN_HEIGHT // 2 + 30) - BET_AREA_HEIGHT - 40) - 100 # Moved up 100px
 BET_AREA_SPACING = 30
 
 # Calculate total width needed for 3 betting areas + spacing
@@ -75,7 +75,11 @@ BACCARAT_CLEAR_BETS_BUTTON_RECT = pygame.Rect(
 )
 
 # --- Text Positions ---
-PLAYER_VALUE_TEXT_Y = PLAYER_HAND_Y + layout_cards.CARD_HEIGHT + 20
-BANKER_VALUE_TEXT_Y = BANKER_HAND_Y + layout_cards.CARD_HEIGHT + 20
-RESULT_TEXT_Y = BET_AREA_Y - 50 # Above betting areas
+# Keep text positions fixed relative to their original locations
+# Original Player Hand Y = display.SCREEN_HEIGHT // 2 + 30
+PLAYER_VALUE_TEXT_Y = (display.SCREEN_HEIGHT // 2 + 30) + layout_cards.CARD_HEIGHT + 20
+# Original Banker Hand Y = display.SCREEN_HEIGHT // 2 + 30
+BANKER_VALUE_TEXT_Y = (display.SCREEN_HEIGHT // 2 + 30) + layout_cards.CARD_HEIGHT + 20
+# Original Bet Area Y = (display.SCREEN_HEIGHT // 2 + 30) - BET_AREA_HEIGHT - 40
+RESULT_TEXT_Y = ((display.SCREEN_HEIGHT // 2 + 30) - BET_AREA_HEIGHT - 40) - 50 # Fixed position above original bet areas
 MESSAGE_TEXT_Y = display.SCREEN_HEIGHT - 150 # Near bottom, above buttons
