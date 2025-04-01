@@ -99,11 +99,12 @@ def main():
     try:
         if os.path.exists(overlay_path):
             slot_machine_overlay_image = pygame.image.load(overlay_path).convert_alpha() # Use convert_alpha() for transparency
-            # Optional: Scale if needed, but let's assume it's pre-sized for now
-            # overlay_width = display.SCREEN_WIDTH * 0.8 # Example scaling
-            # overlay_height = int(slot_machine_overlay_image.get_height() * (overlay_width / slot_machine_overlay_image.get_width()))
-            # slot_machine_overlay_image = pygame.transform.smoothscale(slot_machine_overlay_image, (int(overlay_width), overlay_height))
-            print(f"Loaded slot machine overlay image from: {overlay_path}")
+            # --- MODIFICATION START ---
+            # Resize the image
+            target_size = (1040, 750)
+            slot_machine_overlay_image = pygame.transform.smoothscale(slot_machine_overlay_image, target_size)
+            # --- MODIFICATION END ---
+            print(f"Loaded and resized slot machine overlay image from: {overlay_path}")
         else:
             print(f"Warning: Slot machine overlay image not found at {overlay_path}.")
     except pygame.error as e:

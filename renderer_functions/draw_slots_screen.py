@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Any
 
 import config_display as display
 import config_colors as colors
+import config_assets as assets
 import config_states as states
 import config_animations as anim
 import config_layout_slots as layout_slots
@@ -91,7 +92,7 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
 
         reel_x = REEL_X_START + reel_index * (layout_slots.SLOT_SYMBOL_WIDTH + REEL_SPACING)
 
-        # Determine symbols to show based on state
+        # Determine symbols to draw based on state
         symbols_to_draw = []
         if current_state == states.STATE_SLOTS_SPINNING:
             # Show rapidly changing symbols based on timer/position
@@ -134,10 +135,12 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
 
     # --- Draw Slot Machine Overlay ---
     if slot_machine_overlay_image:
-        # Center the overlay image horizontally, adjust vertical position as needed
-        overlay_rect = slot_machine_overlay_image.get_rect(centerx=display.SCREEN_WIDTH // 2)
-        # Adjust Y position - perhaps align its top edge slightly above the reels or centered vertically
-        overlay_rect.top = REEL_Y_POS - 100 # Example: Position above the reels; adjust as necessary
+        # Get the rect of the already resized image
+        overlay_rect = slot_machine_overlay_image.get_rect()
+        # Start by centering it on the screen
+        overlay_rect.centerx = display.SCREEN_WIDTH // 2
+        # Adjust vertical position: center and then move up 50px
+        overlay_rect.centery = (display.SCREEN_HEIGHT // 2) - 30
         surface.blit(slot_machine_overlay_image, overlay_rect)
 
 
@@ -190,4 +193,3 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
         final_money = game_state_manager.money
         draw_text(surface, f"Final Money: ${final_money}", fonts['game_over_medium'], display.SCREEN_WIDTH // 2, display.SCREEN_HEIGHT // 2, colors.WHITE, center=True)
         draw_button(surface, fonts, "Play Again", layout_general.PLAY_AGAIN_BUTTON_RECT, colors.GREEN, colors.WHITE)
-
