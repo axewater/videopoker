@@ -31,12 +31,21 @@ class InputHandler:
                     actions.append((constants.ACTION_QUIT, None))
                     continue # Don't process other clicks if quit is clicked
 
-                # --- State-dependent checks ---
-                if current_state == constants.STATE_START_MENU:
-                    if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
-                        actions.append((constants.ACTION_DEAL_DRAW, None))
+                # --- Always check Return to Menu button (if not already in menu) ---
+                if current_state != constants.STATE_MAIN_MENU and constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                    actions.append((constants.ACTION_RETURN_TO_MENU, None))
+                    continue # Don't process other clicks if returning to menu
 
-                elif current_state == constants.STATE_WAITING_FOR_HOLD:
+                # --- State-dependent checks ---
+                if current_state == constants.STATE_MAIN_MENU:
+                    if constants.DRAW_POKER_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_CHOOSE_DRAW_POKER, None))
+                    elif constants.MULTI_POKER_BUTTON_RECT.collidepoint(mouse_pos):
+                        # Add action for multi poker later
+                        # actions.append((constants.ACTION_CHOOSE_MULTI_POKER, None))
+                        print("Multi Poker selected (not implemented yet)") # Placeholder
+
+                elif current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
                     # Check Deal/Draw button first
                     if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_DEAL_DRAW, None))
@@ -54,7 +63,7 @@ class InputHandler:
                                     actions.append((constants.ACTION_HOLD_TOGGLE, i))
                                     break # Process only one hold button click
 
-                elif current_state == constants.STATE_SHOWING_RESULT:
+                elif current_state == constants.STATE_DRAW_POKER_SHOWING_RESULT:
                     if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_DEAL_DRAW, None))
 

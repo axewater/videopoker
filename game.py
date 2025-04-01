@@ -46,10 +46,10 @@ class Game:
         self._load_sounds()
 
         # Game State Variables
-        self.current_state = constants.STATE_START_MENU
+        self.current_state = constants.STATE_MAIN_MENU
         self.hand: List[Card] = []
         self.held_indices: List[int] = []
-        self.message = "Welcome! Click DEAL to start."
+        self.message = "" # No message on main menu initially
         self.result_message = ""
         self.final_hand_rank: Optional[HandRank] = None # Store the rank enum/constant of the final hand
 
@@ -81,18 +81,29 @@ class Game:
                 # Assign a dummy sound object for this specific sound
                 self.sounds[name] = DummySound()
 
-    def _start_new_round(self):
+    def _reset_game_variables(self):
+        """Resets variables needed for starting a new game or returning to menu."""
+        self.hand = []
+        self.held_indices = []
+        self.message = ""
+        self.result_message = ""
+        self.final_hand_rank = None
+        self.money_animation_active = False
+        self.money_animation_timer = 0
+        self.money_animation_amount = 0
+        # Don't reset game_state_manager.money here
+
+    def _start_draw_poker_round(self):
         """Resets variables for a new round of play."""
         if self.game_state_manager.start_game():
+            self._reset_game_variables() # Reset common variables
             self.deck = Deck() # Get a fresh shuffled deck
             self.hand = self.deck.deal(5)
-            self.held_indices = []
             self.message = "Click HOLD buttons, then click DRAW"
-            self.result_message = ""
-            self.final_hand_rank = None
-            self.current_state = constants.STATE_WAITING_FOR_HOLD
+            self.current_state = constants.STATE_DRAW_POKER_WAITING_FOR_HOLD
             self.sounds["deal"].play() # Play deal sound
         else:
+            self._reset_game_variables() # Reset variables even if game over
             self.message = "GAME OVER! Not enough money."
             self.result_message = ""
             self.current_state = constants.STATE_GAME_OVER
@@ -160,7 +171,7 @@ class Game:
 
         self.sounds["draw"].play() # Play draw sound (after cards are replaced)
         self.message = "" # Clear the action message
-        self.current_state = constants.STATE_SHOWING_RESULT
+        self.current_state = constants.STATE_DRAW_POKER_SHOWING_RESULT
 
     def _process_input(self, actions: List[Tuple[str, Optional[any]]]):
         """Processes actions received from the InputHandler."""
@@ -170,18 +181,28 @@ class Game:
                 self.sounds["button"].play() # Optional: sound on quit
                 break # Exit loop immediately on quit
 
+            elif action == constants.ACTION_CHOOSE_DRAW_POKER:
+                self.sounds["button"].play()
+                if self.current_state == constants.STATE_MAIN_MENU:
+                    self._start_draw_poker_round() # Start the first round
+
+            elif action == constants.ACTION_RETURN_TO_MENU:
+                self.sounds["button"].play()
+                self._reset_game_variables()
+                self.message = "" # Clear any lingering game messages
+                self.current_state = constants.STATE_MAIN_MENU
+
             elif action == constants.ACTION_DEAL_DRAW:
                 self.sounds["button"].play()
-                if self.current_state == constants.STATE_START_MENU:
-                    self._start_new_round()
-                elif self.current_state == constants.STATE_WAITING_FOR_HOLD:
+                # Deal/Draw button now only works in specific game states
+                if self.current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
                     self._process_drawing()
-                elif self.current_state == constants.STATE_SHOWING_RESULT:
-                    self._start_new_round() # Start next game if possible
+                elif self.current_state == constants.STATE_DRAW_POKER_SHOWING_RESULT:
+                    self._start_draw_poker_round() # Start next game if possible
                     # Deal sound is played inside _start_new_round
 
             elif action == constants.ACTION_HOLD_TOGGLE:
-                if self.current_state == constants.STATE_WAITING_FOR_HOLD:
+                if self.current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
                     index = payload
                     if index is not None:
                         if index in self.held_indices:
@@ -197,12 +218,9 @@ class Game:
                      self.sounds["button"].play()
                      # Reset game state completely
                      self.game_state_manager = GameState(starting_money=10) # Or original starting money
-                     self.hand = []
-                     self.held_indices = []
-                     self.message = "Welcome! Click DEAL to start."
-                     self.result_message = ""
-                     self.final_hand_rank = None
-                     self.current_state = constants.STATE_START_MENU
+                     self._reset_game_variables()
+                     self.message = "" # No message on main menu
+                     self.current_state = constants.STATE_MAIN_MENU
 
     def _update(self):
         """Handles game logic updates, like animations."""
@@ -215,6 +233,12 @@ class Game:
 
     def _render(self):
         """Draws the current game state to the screen."""
+        # Check if we are in the main menu state
+        if self.current_state == constants.STATE_MAIN_MENU:
+            self.renderer.draw_main_menu()
+            pygame.display.flip()
+            return # Don't draw the rest of the game screen
+
         game_data = {
             "money": self.game_state_manager.money,
             "can_play": self.game_state_manager.can_play(),

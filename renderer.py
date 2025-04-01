@@ -199,6 +199,20 @@ class Renderer:
         pygame.draw.rect(self.surface, color, rect, border_radius=5)
         self.draw_text(text, 'button', rect.centerx, rect.centery, text_color, center=True)
 
+    def draw_main_menu(self):
+        """Draws the main menu screen."""
+        self.surface.fill(constants.DARK_GREEN)
+        self.draw_text("VIDEO POKER", 'game_over_large', constants.SCREEN_WIDTH // 2, 100, constants.GOLD, center=True)
+        self.draw_text("Choose your game:", 'message', constants.SCREEN_WIDTH // 2, constants.MENU_BUTTON_Y_START - 50, constants.WHITE, center=True)
+
+        # Draw Buttons
+        self.draw_button("Draw Poker", constants.DRAW_POKER_BUTTON_RECT, constants.GREEN, constants.WHITE)
+        # Draw Multi Poker button (maybe greyed out initially)
+        # self.draw_button("Multi Poker (WIP)", constants.MULTI_POKER_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
+        self.draw_button("Multi Poker", constants.MULTI_POKER_BUTTON_RECT, constants.GREEN, constants.WHITE) # Enable for now
+
+        self.draw_button("QUIT", constants.QUIT_BUTTON_RECT, constants.RED, constants.WHITE)
+
     def draw_game_screen(self, game_data: dict):
         """Draws the entire game screen based on the provided game data."""
         self.surface.fill(constants.DARK_GREEN)
@@ -224,8 +238,8 @@ class Renderer:
         held_indices = game_data.get('held_indices', [])
         current_state = game_data.get('current_state')
 
-        # Only draw hand if not in start menu or if game over but hand exists (showing final hand)
-        if hand and (current_state != constants.STATE_START_MENU or (current_state == constants.STATE_GAME_OVER and hand)):
+        # Only draw hand if not in main menu or if game over but hand exists (showing final hand)
+        if hand and (current_state != constants.STATE_MAIN_MENU or (current_state == constants.STATE_GAME_OVER and hand)):
              self.draw_hand(hand, held_indices)
 
         # Draw Messages
@@ -242,13 +256,16 @@ class Renderer:
         # Quit Button (always visible)
         self.draw_button("QUIT", constants.QUIT_BUTTON_RECT, constants.RED, constants.WHITE)
 
+        # Return to Menu Button (visible during gameplay)
+        if current_state not in [constants.STATE_MAIN_MENU, constants.STATE_GAME_OVER]:
+            self.draw_button("Return to Menu", constants.RETURN_TO_MENU_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
+
         # Contextual Deal/Draw Button
         can_play = game_data.get('can_play', False)
-        if current_state == constants.STATE_START_MENU:
-            self.draw_button("DEAL", constants.DEAL_DRAW_BUTTON_RECT, constants.GREEN, constants.WHITE)
-        elif current_state == constants.STATE_WAITING_FOR_HOLD:
+        # No Deal button on main menu anymore
+        if current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
             self.draw_button("DRAW", constants.DEAL_DRAW_BUTTON_RECT, constants.GREEN, constants.WHITE)
-        elif current_state == constants.STATE_SHOWING_RESULT:
+        elif current_state == constants.STATE_DRAW_POKER_SHOWING_RESULT:
              button_color = constants.GREEN if can_play else constants.RED
              self.draw_button("DEAL", constants.DEAL_DRAW_BUTTON_RECT, button_color, constants.WHITE)
 
