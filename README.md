@@ -1,2 +1,2 @@
-# videopoker
-Simple video poker games and variants
+# cAIsino v1.0
+Various simple casino games
