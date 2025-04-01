@@ -185,6 +185,14 @@ ROULETTE_BUTTON_RECT = pygame.Rect(
     BUTTON_HEIGHT
 )
 
+# Restart Game Button Rectangle (Position bottom-center on Game Select)
+RESTART_GAME_BUTTON_RECT = pygame.Rect(
+    SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, # Centered horizontally
+    GAME_SELECT_BUTTON_Y_START + 4 * (BUTTON_HEIGHT + GAME_SELECT_BUTTON_SPACING) + 20, # Below other game buttons
+    BUTTON_WIDTH,
+    BUTTON_HEIGHT
+)
+
 # Quit Button Rectangle
 QUIT_BUTTON_RECT = pygame.Rect(
     SCREEN_WIDTH - BUTTON_WIDTH - 20,
@@ -247,6 +255,7 @@ ACTION_CHOOSE_DRAW_POKER = "CHOOSE_DRAW_POKER"
 ACTION_CHOOSE_MULTI_POKER = "CHOOSE_MULTI_POKER"
 ACTION_CHOOSE_BLACKJACK = "CHOOSE_BLACKJACK" # New action
 ACTION_CHOOSE_ROULETTE = "CHOOSE_ROULETTE" # New action
+ACTION_RESTART_GAME = "RESTART_GAME" # New action for restarting money
 ACTION_RETURN_TO_MENU = "RETURN_TO_MENU"
 ACTION_HOLD_TOGGLE = "HOLD_TOGGLE" # Payload will be the index (0-4)
 # Settings Actions

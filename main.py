@@ -4,12 +4,12 @@ from typing import Dict, Any
 
 # Local Imports
 import constants
-from card import Card # Keep if needed directly, maybe not
-from deck import Deck # Keep for type hinting if needed
+from card import Card
+from deck import Deck
 from game_state import GameState
 from input_handler import InputHandler
-from poker_rules import HandRank # Keep for type hinting
-from blackjack_rules import get_hand_value, is_blackjack, determine_winner, BLACKJACK_PAYOUT, WIN_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT # Import Blackjack rules
+from poker_rules import HandRank
+from blackjack_rules import get_hand_value, is_blackjack, determine_winner, BLACKJACK_PAYOUT, WIN_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT
 
 # --- Import Extracted Functions ---
 # Renderer Functions
@@ -20,11 +20,11 @@ from renderer_functions.draw_game_selection_menu import draw_game_selection_menu
 from renderer_functions.draw_game_screen import draw_game_screen
 from renderer_functions.draw_settings_menu import draw_settings_menu
 from renderer_functions.draw_confirm_exit import draw_confirm_exit
-from renderer_functions.draw_blackjack_screen import draw_blackjack_screen # Import Blackjack renderer
+from renderer_functions.draw_blackjack_screen import draw_blackjack_screen
 
 # Game Logic Functions
 from game_functions.load_sounds import load_sounds
-from game_functions.dummy_sound import DummySound # For type hinting
+from game_functions.dummy_sound import DummySound
 from game_functions.process_input import process_input
 from game_functions.update_game import update_game
 from game_functions.reset_game_variables import reset_game_variables
@@ -36,7 +36,7 @@ from game_functions.resolve_blackjack_round import resolve_blackjack_round
 def main():
     # --- Pygame Initialization ---
     pygame.init()
-    try: # Try initializing mixer early
+    try:
         pygame.mixer.init()
         print("Sound system initialized.")
     except pygame.error as e:
@@ -53,9 +53,8 @@ def main():
         """Sets the volume for all loaded sound objects."""
         print(f"Applying volume: {volume_level:.2f}")
         for name, sound_obj in sounds_dict.items():
-            if hasattr(sound_obj, 'set_volume'): # Check if it's a real sound, not DummySound
+            if hasattr(sound_obj, 'set_volume'):
                 sound_obj.set_volume(volume_level)
-            # else: print(f"Skipping volume set for {name} (DummySound)") # Debug
 
     pygame.display.set_caption("Video Poker (Modular)")
     clock = pygame.time.Clock()
@@ -76,7 +75,7 @@ def main():
 
     # --- Initialize Game State Variables ---
     sounds = load_sounds(initial_sound_enabled)
-    initial_volume = 0.7 # Default volume level (70%)
+    initial_volume = 0.7
 
     # --- Initialize Game Components ---
     input_handler = InputHandler()
@@ -99,18 +98,19 @@ def main():
         'result_message_flash_active': False,
         'result_message_flash_timer': 0,
         'result_message_flash_visible': True,
-        'player_hand': [], # Add for Blackjack
-        'dealer_hand': [], # Add for Blackjack
-        'dealer_shows_one_card': False, # Add for Blackjack rendering logic
-        'deck': Deck(), # Start with a deck, even if unused initially
+        'player_hand': [],
+        'dealer_hand': [],
+        'dealer_shows_one_card': False,
+        'deck': Deck(),
         'running': True,
-        'sound_enabled': initial_sound_enabled, # Add sound setting
-        'needs_money_reset': False, # Flag for play again action
-        'confirm_exit_destination': None, # State to go to after confirming exit
-        'sound_setting_changed': False, # Flag to reload sounds if setting changed
-        'volume_level': initial_volume, # Add volume level (0.0 to 1.0)
-        'volume_changed': False, # Flag to apply volume changes
-        'previous_state_before_confirm': None, # Store previous state for confirmation dialog
+        'sound_enabled': initial_sound_enabled,
+        'needs_money_reset': False,
+        'confirm_exit_destination': None,
+        'sound_setting_changed': False,
+        'volume_level': initial_volume,
+        'volume_changed': False,
+        'previous_state_before_confirm': None,
+        'confirm_action_type': None,
     }
 
     # Apply initial volume
@@ -126,8 +126,8 @@ def main():
 
         # Handle specific state changes triggered by input processing
         if game_state.get('needs_money_reset', False):
-            game_state_manager = GameState(starting_money=10) # Re-initialize money
-            game_state['needs_money_reset'] = False # Reset flag
+            game_state_manager = GameState(starting_money=10)
+            game_state['needs_money_reset'] = False
 
         # Check if quit action was processed
         if not game_state['running']:
@@ -136,20 +136,19 @@ def main():
         # Reload sounds if setting changed
         if game_state.get('sound_setting_changed', False):
             sounds = load_sounds(game_state['sound_enabled'])
-            game_state['sound_setting_changed'] = False # Reset flag
-            # Re-apply volume when sounds are reloaded
+            game_state['sound_setting_changed'] = False
             apply_volume(game_state['volume_level'], sounds)
 
         # Apply volume changes if flagged
         if game_state.get('volume_changed', False):
             apply_volume(game_state['volume_level'], sounds)
-            game_state['volume_changed'] = False # Reset flag
+            game_state['volume_changed'] = False
 
         # 3. Update Game Logic (Timers, Game Over Checks) -> Update State
         game_state = update_game(game_state, game_state_manager)
 
         # 4. Render Output
-        screen.fill(constants.DARK_GREEN) # Default background
+        screen.fill(constants.DARK_GREEN)
 
         render_data = {
             'current_state': game_state['current_state'],
@@ -159,7 +158,7 @@ def main():
             'message': game_state['message'],
             'result_message': game_state['result_message'],
             'winning_rank': game_state['final_hand_rank'],
-            'can_play': game_state_manager.can_play(), # Check current playability
+            'can_play': game_state_manager.can_play(),
             'multi_hands': game_state['multi_hands'],
             'multi_results': game_state['multi_results'],
             'money_animation_active': game_state['money_animation_active'],
@@ -173,18 +172,17 @@ def main():
         elif game_state['current_state'] == constants.STATE_SETTINGS:
             draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'])
         elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
-            draw_confirm_exit(screen, fonts)
+            draw_confirm_exit(screen, fonts, game_state)
         elif game_state['current_state'] in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_PLAYER_TURN,
                                              constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
             draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
         else:
-            # Draw the main game screen elements using the combined data
             draw_game_screen(screen, fonts, card_images, render_data, game_state)
 
-        pygame.display.flip() # Update the full screen
+        pygame.display.flip()
 
         # 5. Control Frame Rate
-        clock.tick(30) # Limit to 30 FPS
+        clock.tick(30)
 
     # --- Clean up ---
     pygame.quit()

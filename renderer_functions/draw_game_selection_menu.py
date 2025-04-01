@@ -23,5 +23,8 @@ def draw_game_selection_menu(surface: pygame.Surface, fonts: Dict[str, pygame.fo
     draw_button(surface, fonts, "Blackjack", constants.BLACKJACK_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
     draw_button(surface, fonts, "Roulette", constants.ROULETTE_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
 
+    # Restart Game Button (use a distinct color like RED)
+    draw_button(surface, fonts, "Restart", constants.RESTART_GAME_BUTTON_RECT, constants.RED, constants.WHITE)
+
     # Back Button (reuse settings back button rect/position)
     draw_button(surface, fonts, "Back", constants.SETTINGS_BACK_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)

@@ -103,6 +103,14 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 # Placeholder: Just show a message for now
                 new_game_state['message'] = "Roulette coming soon!"
 
+        elif action == constants.ACTION_RESTART_GAME:
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # Trigger confirmation dialog specifically for restart
+                new_game_state['confirm_action_type'] = 'RESTART' # Set the reason for confirmation
+                new_game_state['previous_state_before_confirm'] = constants.STATE_GAME_SELECTION # Store where to return if 'No'
+                new_game_state['current_state'] = constants.STATE_CONFIRM_EXIT
+
         elif action == constants.ACTION_RETURN_TO_MENU:
             # This action now means "Return to Game Selection Menu" from a game
             current_state_str = new_game_state['current_state']
@@ -110,6 +118,7 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 if sounds.get("button"): sounds["button"].play()
                 # Check if player is in the middle of a poker hand
                 if new_game_state['current_state'] in [constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
+                    new_game_state['confirm_action_type'] = 'EXIT' # Set the reason for confirmation
                     new_game_state['confirm_exit_destination'] = constants.STATE_GAME_SELECTION # Store where to go
                     new_game_state['previous_state_before_confirm'] = new_game_state['current_state'] # Store current state to return to if 'No'
                     new_game_state['current_state'] = constants.STATE_CONFIRM_EXIT
@@ -227,26 +236,55 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
         elif action == constants.ACTION_CONFIRM_YES:
             if new_game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
                 if sounds.get("button"): sounds["button"].play()
-                destination = new_game_state.get('confirm_exit_destination', constants.STATE_GAME_SELECTION) # Default safety
-                reset_state = reset_game_variables() # Reset hand, holds etc.
-                new_game_state.update(reset_state)
-                # Clear potential game-specific state
-                new_game_state['player_hand'] = []
-                new_game_state['dealer_hand'] = []
-                new_game_state['multi_hands'] = []
-                new_game_state['message'] = ""
-                new_game_state['current_state'] = destination
-                new_game_state['confirm_exit_destination'] = None # Clear destination
-                new_game_state['previous_state_before_confirm'] = None # Clear previous state
+                action_type = new_game_state.get('confirm_action_type')
+
+# (Continuing from the ACTION_CONFIRM_YES block)
+
+                if action_type == 'RESTART':
+                    # Set flag for main loop to reset money and return to game selection
+                    new_game_state['needs_money_reset'] = True
+                    new_game_state['current_state'] = constants.STATE_GAME_SELECTION # Go back to game selection after reset
+                    # Clear confirmation flags
+                    new_game_state['confirm_action_type'] = None
+                    new_game_state['previous_state_before_confirm'] = None
+
+                else: # Default to 'EXIT' action
+                    # Proceed to the intended destination after confirming exit
+                    destination_state = new_game_state.get('confirm_exit_destination', constants.STATE_GAME_SELECTION) # Default to Game Select
+                    reset_state = reset_game_variables()
+                    new_game_state.update(reset_state)
+                    # Clear potential game-specific state
+                    new_game_state['player_hand'] = []
+                    new_game_state['dealer_hand'] = []
+                    new_game_state['multi_hands'] = []
+                    new_game_state['multi_results'] = []
+                    new_game_state['message'] = "" # Clear any lingering game messages
+                    new_game_state['current_state'] = destination_state
+                    # Clear confirmation flags
+                    new_game_state['confirm_action_type'] = None
+                    new_game_state['confirm_exit_destination'] = None
+                    new_game_state['previous_state_before_confirm'] = None
+
 
         elif action == constants.ACTION_CONFIRM_NO:
             if new_game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
                 if sounds.get("button"): sounds["button"].play()
-                # Return to the state we were in before showing the confirmation
-                previous_state = new_game_state.get('previous_state_before_confirm', constants.STATE_DRAW_POKER_WAITING_FOR_HOLD) # Default safety
-                new_game_state['current_state'] = previous_state
-                new_game_state['confirm_exit_destination'] = None # Clear destination
-                new_game_state['previous_state_before_confirm'] = None # Clear previous state
+                # Return to the state the player was in before the confirmation was triggered
+                previous_state = new_game_state.get('previous_state_before_confirm')
+                if previous_state:
+                    new_game_state['current_state'] = previous_state
+                else:
+                    # Fallback if previous state wasn't stored correctly
+                    new_game_state['current_state'] = constants.STATE_GAME_SELECTION
+                # Clear confirmation flags
+                new_game_state['confirm_action_type'] = None
+                new_game_state['confirm_exit_destination'] = None
+                new_game_state['previous_state_before_confirm'] = None
 
-    new_game_state['running'] = running # Update running state
+    # --- End of action processing loop ---
+
+    # Update the running state in the dictionary before returning
+    new_game_state['running'] = running
+
     return new_game_state
+
