@@ -93,6 +93,21 @@ def main():
     from config_layout_slots import SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT
     slot_images = load_slot_images(assets.SLOTS_ASSET_PATH,
                                    (SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT))
+    # --- Load Slot Machine Overlay Image ---
+    slot_machine_overlay_image = None
+    overlay_path = os.path.join(assets.SLOTS_ASSET_PATH, "slotmachine_lion.png")
+    try:
+        if os.path.exists(overlay_path):
+            slot_machine_overlay_image = pygame.image.load(overlay_path).convert_alpha() # Use convert_alpha() for transparency
+            # Optional: Scale if needed, but let's assume it's pre-sized for now
+            # overlay_width = display.SCREEN_WIDTH * 0.8 # Example scaling
+            # overlay_height = int(slot_machine_overlay_image.get_height() * (overlay_width / slot_machine_overlay_image.get_width()))
+            # slot_machine_overlay_image = pygame.transform.smoothscale(slot_machine_overlay_image, (int(overlay_width), overlay_height))
+            print(f"Loaded slot machine overlay image from: {overlay_path}")
+        else:
+            print(f"Warning: Slot machine overlay image not found at {overlay_path}.")
+    except pygame.error as e:
+        print(f"Warning: Failed to load slot machine overlay image: {e}")
 
     # --- Load Backdrop Image ---
     backdrop_image = None
@@ -217,7 +232,7 @@ def main():
         }
 
         if game_state['current_state'] == states.STATE_TOP_MENU:
-            draw_top_menu(screen, fonts, backdrop_image) # Pass backdrop
+            draw_top_menu(screen, fonts, backdrop_image)
         elif game_state['current_state'] == states.STATE_GAME_SELECTION:
             draw_game_selection_menu(screen, fonts, game_state_manager.money, backdrop_image) # Pass backdrop
         elif game_state['current_state'] == states.STATE_SETTINGS:
@@ -233,7 +248,7 @@ def main():
             draw_roulette_screen(screen, fonts, game_state, game_state_manager)
         elif game_state['current_state'] in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SPINNING, states.STATE_SLOTS_SHOWING_RESULT]:
             # Draw the slots screen
-            draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager)
+            draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager, slot_machine_overlay_image) # Pass overlay image
         else: # Draw/Multi Poker
             # Ensure render_data includes necessary items like money animation status
             render_data['money_animation_active'] = game_state.get('money_animation_active', False)
