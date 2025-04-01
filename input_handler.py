@@ -54,8 +54,10 @@ class InputHandler:
                     # Check Deal/Draw button first
                     if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_DEAL_DRAW, None))
+                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_RETURN_TO_MENU, None))
                     else:
-                        # Check card clicks
+                        # Check card clicks (only if Deal/Draw or Menu wasn't clicked)
                         for i, card_rect in enumerate(constants.CARD_RECTS):
                             if card_rect.collidepoint(mouse_pos):
                                 actions.append((constants.ACTION_HOLD_TOGGLE, i))
@@ -75,6 +77,10 @@ class InputHandler:
                 elif current_state == constants.STATE_SETTINGS:
                     if constants.SOUND_TOGGLE_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_TOGGLE_SOUND, None))
+                    elif constants.VOLUME_DOWN_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_VOLUME_DOWN, None))
+                    elif constants.VOLUME_UP_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_VOLUME_UP, None))
                     elif constants.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_RETURN_TO_TOP_MENU, None))
 

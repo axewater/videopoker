@@ -43,6 +43,23 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 # Play button sound *after* potentially enabling sound
                 if new_game_state['sound_enabled'] and sounds.get("button"): sounds["button"].play()
 
+        elif action == constants.ACTION_VOLUME_DOWN:
+             if new_game_state['current_state'] == constants.STATE_SETTINGS and new_game_state['sound_enabled']:
+                 current_volume = new_game_state.get('volume_level', 0.7)
+                 new_volume = max(0.0, current_volume - 0.1) # Decrease by 10%, min 0
+                 new_game_state['volume_level'] = round(new_volume, 2) # Round to avoid float issues
+                 new_game_state['volume_changed'] = True # Flag to apply volume in main loop
+                 if sounds.get("button"): sounds["button"].play()
+
+        elif action == constants.ACTION_VOLUME_UP:
+             if new_game_state['current_state'] == constants.STATE_SETTINGS and new_game_state['sound_enabled']:
+                 current_volume = new_game_state.get('volume_level', 0.7)
+                 new_volume = min(1.0, current_volume + 0.1) # Increase by 10%, max 1
+                 new_game_state['volume_level'] = round(new_volume, 2) # Round to avoid float issues
+                 new_game_state['volume_changed'] = True # Flag to apply volume in main loop
+                 if sounds.get("button"): sounds["button"].play()
+
+
         elif action == constants.ACTION_RETURN_TO_TOP_MENU: # From Settings or Game Selection
             if new_game_state['current_state'] in [constants.STATE_SETTINGS, constants.STATE_GAME_SELECTION]:
                 if sounds.get("button"): sounds["button"].play()

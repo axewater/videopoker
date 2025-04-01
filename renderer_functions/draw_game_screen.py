@@ -83,9 +83,6 @@ def draw_game_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font]
             surface.blit(text_surf, text_rect)
 
     # Draw Buttons
-    # Quit Button (always visible)
-    draw_button(surface, fonts, "QUIT", constants.QUIT_BUTTON_RECT, constants.RED, constants.WHITE)
-
     # Return to Game Selection Button (visible during gameplay)
     if current_state not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT]:
         draw_button(surface, fonts, "Game Menu", constants.RETURN_TO_MENU_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
