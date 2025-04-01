@@ -1,3 +1,4 @@
+# /game_functions/process_input.py
 from typing import List, Tuple, Optional, Dict, Any
 import pygame
 
@@ -349,7 +350,8 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                          if sounds.get("deal"): sounds["deal"].play() # Sound for spin start
                          new_game_state['current_state'] = constants.STATE_ROULETTE_SPINNING
                          new_game_state['roulette_spin_timer'] = constants.ROULETTE_SPIN_DURATION
-                         new_state['roulette_winning_number'] = None # Ensure no winning number displayed during spin
+                         # *** CORRECTED LINE BELOW ***
+                         new_game_state['roulette_winning_number'] = None # Ensure no winning number displayed during spin
                          new_game_state['message'] = "Spinning..."
                          new_game_state['result_message'] = "" # Clear previous result
                      else:
@@ -360,7 +362,7 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                      new_game_state['message'] = f"Not enough money! Need ${total_bet} to spin."
                      if sounds.get("lose"): sounds["lose"].play()
 
-        elif action == constants.ACTION_ROULETTE_CLEAR_BETS:
+        elif action == 'ROULETTE_CLEAR_BETS': # Use the actual constant name if defined, or string directly
              # Allow clearing in BETTING or RESULT state
              if new_game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_RESULT]:
                  if new_game_state.get('roulette_bets'): # Only clear if bets exist
