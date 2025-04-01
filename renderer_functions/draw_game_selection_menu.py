@@ -28,6 +28,7 @@ def draw_game_selection_menu(surface: pygame.Surface, fonts: Dict[str, pygame.fo
     draw_button(surface, fonts, "Blackjack", layout_general.BLACKJACK_BUTTON_RECT, colors.GREEN, colors.WHITE) # Changed color
     draw_button(surface, fonts, "Roulette", layout_general.ROULETTE_BUTTON_RECT, colors.GREEN, colors.WHITE) # Changed color
     draw_button(surface, fonts, "Slots", layout_general.SLOTS_BUTTON_RECT, colors.GREEN, colors.WHITE) # Added Slots button
+    draw_button(surface, fonts, "Baccarat", layout_general.BACCARAT_BUTTON_RECT, colors.GREEN, colors.WHITE) # Added Baccarat button
 
     # Restart Game Button (use a distinct color like RED)
     draw_button(surface, fonts, "Restart", layout_general.RESTART_GAME_BUTTON_RECT, colors.RED, colors.WHITE)

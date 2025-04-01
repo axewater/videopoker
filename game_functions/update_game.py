@@ -7,6 +7,8 @@ import config_animations as anim
 import config_layout_cards as layout_cards
 from .determine_roulette_result import determine_roulette_result
 from .resolve_slots_round import resolve_slots_round
+from .resolve_baccarat_round import resolve_baccarat_round
+from .process_baccarat_drawing import process_baccarat_drawing
 from game_state import GameState
 
 def update_game(current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,12 +104,23 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             new_state['current_state'] = states.STATE_SLOTS_IDLE
             new_state['message'] = "Click SPIN to play ($1)" # Reset message
 
+    # Update Baccarat: Process drawing, then resolve
+    elif new_state['current_state'] == states.STATE_BACCARAT_DRAWING:
+         # Perform the drawing logic
+         draw_state = process_baccarat_drawing(new_state, sounds)
+         new_state.update(draw_state)
+         # If drawing didn't result in an error state, resolve the round
+         if new_state['current_state'] not in [states.STATE_GAME_OVER, states.STATE_BACCARAT_BETTING]:
+             resolve_state = resolve_baccarat_round(new_state, game_state_manager, sounds)
+             new_state.update(resolve_state) # This will set state to BACCARAT_RESULT
+
     # Check for game over condition (logic remains the same)
     current_state_str = new_state['current_state']
     needs_money_check_states = [
         states.STATE_DRAW_POKER_SHOWING_RESULT,
         states.STATE_MULTI_POKER_SHOWING_RESULT,
         states.STATE_BLACKJACK_SHOWING_RESULT,
+        states.STATE_BACCARAT_RESULT,
     ]
     if current_state_str in needs_money_check_states:
         is_multi = current_state_str == states.STATE_MULTI_POKER_SHOWING_RESULT

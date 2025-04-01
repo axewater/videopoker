@@ -14,6 +14,7 @@ from .handle_poker_input import handle_poker_action
 from .handle_blackjack_input import handle_blackjack_action
 from .handle_roulette_input import handle_roulette_action
 from .handle_slots_input import handle_slots_action
+from .handle_baccarat_action import handle_baccarat_action
 from .handle_confirmation_input import handle_confirmation_action
 
 def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any], screen: Optional[pygame.Surface] = None, fonts: Optional[Dict[str, pygame.font.Font]] = None) -> Dict[str, Any]:
@@ -50,6 +51,11 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
         # Slots States
         elif current_state_str in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SPINNING, states.STATE_SLOTS_SHOWING_RESULT]:
             new_game_state = handle_slots_action(action, payload, new_game_state, game_state_manager, sounds)
+
+        # Baccarat States
+        elif current_state_str in [states.STATE_BACCARAT_BETTING, states.STATE_BACCARAT_DEALING,
+                                   states.STATE_BACCARAT_DRAWING, states.STATE_BACCARAT_RESULT]:
+            new_game_state = handle_baccarat_action(action, payload, new_game_state, game_state_manager, sounds)
 
         # Confirmation State
         elif current_state_str == states.STATE_CONFIRM_EXIT:

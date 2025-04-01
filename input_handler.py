@@ -9,6 +9,7 @@ import config_layout_general as layout_general
 import config_layout_cards as layout_cards
 import config_layout_roulette as layout_roulette
 import config_layout_slots as layout_slots
+import config_layout_baccarat as layout_baccarat
 
 class InputHandler:
     """Handles user input events."""
@@ -39,8 +40,8 @@ class InputHandler:
                         actions.append((actions_cfg.ACTION_GOTO_PLAY, None))
                     elif layout_general.SETTINGS_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_GOTO_SETTINGS, None))
-                    elif layout_general.TOP_MENU_QUIT_BUTTON_RECT.collidepoint(mouse_pos): # Check Quit button only when in Top Menu
-                         actions.append((actions_cfg.ACTION_QUIT, None)) # Quit from top menu
+                    elif layout_general.TOP_MENU_QUIT_BUTTON_RECT.collidepoint(mouse_pos):
+                         actions.append((actions_cfg.ACTION_QUIT, None))
 
                 elif current_state == states.STATE_GAME_SELECTION:
                     if layout_general.DRAW_POKER_BUTTON_RECT.collidepoint(mouse_pos):
@@ -53,9 +54,11 @@ class InputHandler:
                         actions.append((actions_cfg.ACTION_CHOOSE_ROULETTE, None))
                     elif layout_general.SLOTS_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_CHOOSE_SLOTS, None))
-                    elif layout_general.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
+                    elif layout_general.BACCARAT_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((actions_cfg.ACTION_CHOOSE_BACCARAT, None))
+                    elif layout_general.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_RETURN_TO_TOP_MENU, None))
-                    elif layout_general.RESTART_GAME_BUTTON_RECT.collidepoint(mouse_pos): # Restart button
+                    elif layout_general.RESTART_GAME_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_RESTART_GAME, None))
 
                 elif current_state == states.STATE_BLACKJACK_PLAYER_TURN:
@@ -63,7 +66,7 @@ class InputHandler:
                         actions.append((actions_cfg.ACTION_BLACKJACK_HIT, None))
                     elif layout_cards.BLACKJACK_STAND_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_BLACKJACK_STAND, None))
-                    elif layout_general.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos): # Allow exit during turn
+                    elif layout_general.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((actions_cfg.ACTION_RETURN_TO_MENU, None))
 
                 elif current_state in [states.STATE_DRAW_POKER_IDLE, states.STATE_MULTI_POKER_IDLE,
@@ -82,7 +85,7 @@ class InputHandler:
                                 break # Process only one card click per event
 
                         # Check hold button clicks (if card wasn't clicked)
-                        else: # This 'else' belongs to the 'for' loop
+                        else:
                             for i, hold_rect in enumerate(layout_cards.HOLD_BUTTON_RECTS):
                                 if hold_rect.collidepoint(mouse_pos):
                                     actions.append((actions_cfg.ACTION_HOLD_TOGGLE, i))
@@ -136,7 +139,7 @@ class InputHandler:
 
                     # Check number bets (0-36)
                     for number, rect in layout_roulette.ROULETTE_NUMBER_RECTS.items():
-                        if rect and rect.collidepoint(mouse_pos): # Ensure rect exists
+                        if rect and rect.collidepoint(mouse_pos):
                             actions.append((actions_cfg.ACTION_ROULETTE_BET, {'type': 'number', 'value': number}))
                             clicked_on_bet_area = True
                             break # Process only one bet click
@@ -146,7 +149,7 @@ class InputHandler:
                         for bet_key, definition in outside_bet_definitions.items():
                              rect = definition.get('rect')
                              bet_info = {'type': definition.get('type'), 'value': definition.get('value')}
-                             if rect and rect.collidepoint(mouse_pos): # Ensure rect exists
+                             if rect and rect.collidepoint(mouse_pos):
                                  actions.append((actions_cfg.ACTION_ROULETTE_BET, bet_info))
                                  clicked_on_bet_area = True
                                  break
@@ -156,7 +159,7 @@ class InputHandler:
                         if layout_roulette.ROULETTE_SPIN_BUTTON_RECT.collidepoint(mouse_pos):
                              actions.append((actions_cfg.ACTION_ROULETTE_SPIN, None))
                         elif layout_roulette.ROULETTE_CLEAR_BETS_BUTTON_RECT and layout_roulette.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
-                             actions.append((actions_cfg.ACTION_ROULETTE_CLEAR_BETS, None)) # Use the constant
+                             actions.append((actions_cfg.ACTION_ROULETTE_CLEAR_BETS, None))
                         elif layout_general.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
                              actions.append((actions_cfg.ACTION_RETURN_TO_MENU, None))
 
@@ -169,7 +172,7 @@ class InputHandler:
                 elif current_state == states.STATE_ROULETTE_RESULT:
                      # Allow clearing bets or returning to menu after result
                     if layout_roulette.ROULETTE_CLEAR_BETS_BUTTON_RECT and layout_roulette.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
-                         actions.append((actions_cfg.ACTION_ROULETTE_CLEAR_BETS, None)) # Use the constant
+                         actions.append((actions_cfg.ACTION_ROULETTE_CLEAR_BETS, None))
                     elif layout_general.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
                          actions.append((actions_cfg.ACTION_RETURN_TO_MENU, None))
                     # Also allow placing new bets immediately (acts like clear + place)

@@ -35,6 +35,15 @@ def reset_game_variables() -> Dict[str, Any]:
         'slots_final_symbols': ["?", "?", "?"], # Use placeholders initially
         'slots_spin_timer': 0,
         'slots_result_pause_timer': 0,
+        # Baccarat specific state reset
+        'baccarat_bets': {},
+        'baccarat_bet_type': None,
+        'baccarat_total_bet': 0,
+        'baccarat_player_hand': [],
+        'baccarat_banker_hand': [],
+        'baccarat_player_value': None,
+        'baccarat_banker_value': None,
+        'baccarat_winner': None,
         # Note: deck and current_state are typically handled by the calling function
         # Note: game_state_manager (money) is NOT reset here
     }

@@ -18,6 +18,10 @@ from game_state import GameState
 from input_handler import InputHandler
 from poker_rules import HandRank
 from blackjack_rules import get_hand_value, is_blackjack, determine_winner, BLACKJACK_PAYOUT, WIN_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT
+from baccarat_rules import (
+    get_baccarat_hand_value, is_natural, determine_baccarat_winner, calculate_baccarat_payout,
+    BET_PLAYER, BET_BANKER, BET_TIE
+)
 
 # --- Import Extracted Functions ---
 # Renderer Functions
@@ -32,6 +36,7 @@ from renderer_functions.draw_blackjack_screen import draw_blackjack_screen
 from renderer_functions.draw_roulette_screen import draw_roulette_screen
 from renderer_functions.draw_spinning_wheel import draw_spinning_wheel
 from renderer_functions.draw_slots_screen import draw_slots_screen
+from renderer_functions.draw_baccarat_screen import draw_baccarat_screen
 from renderer_functions.draw_text import draw_text
 
 # Game Logic Functions
@@ -48,6 +53,9 @@ from game_functions.resolve_slots_round import resolve_slots_round
 from game_functions.place_roulette_bet import place_roulette_bet
 from game_functions.determine_roulette_result import determine_roulette_result
 from game_functions.calculate_roulette_winnings import calculate_roulette_winnings
+from game_functions.handle_baccarat_action import handle_baccarat_action
+from game_functions.process_baccarat_drawing import process_baccarat_drawing
+from game_functions.resolve_baccarat_round import resolve_baccarat_round
 
 def main():
     # --- Pygame Initialization ---
@@ -177,6 +185,15 @@ def main():
         'slots_reel_positions': [0, 0, 0],
         'slots_spin_timer': 0,
         'slots_result_pause_timer': 0,
+        # --- Add Baccarat Specific State ---
+        'baccarat_bets': {},
+        'baccarat_bet_type': None,
+        'baccarat_total_bet': 0,
+        'baccarat_player_hand': [],
+        'baccarat_banker_hand': [],
+        'baccarat_player_value': None,
+        'baccarat_banker_value': None,
+        'baccarat_winner': None,
     }
 
     # Apply initial volume
@@ -250,6 +267,9 @@ def main():
         elif game_state['current_state'] in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SPINNING, states.STATE_SLOTS_SHOWING_RESULT]:
             # Draw the slots screen
             draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager, slot_machine_overlay_image) # Pass overlay image
+        elif game_state['current_state'] in [states.STATE_BACCARAT_BETTING, states.STATE_BACCARAT_DEALING,
+                                             states.STATE_BACCARAT_DRAWING, states.STATE_BACCARAT_RESULT]: # Added Baccarat draw call
+            draw_baccarat_screen(screen, fonts, card_images, game_state, game_state_manager)
         else: # Draw/Multi Poker
             # Ensure render_data includes necessary items like money animation status
             render_data['money_animation_active'] = game_state.get('money_animation_active', False)

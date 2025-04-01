@@ -14,6 +14,7 @@ DARK_GREEN = (0, 100, 0)
 BUTTON_OFF = (100, 100, 100)
 BUTTON_ON = (255, 215, 0) # Goldish color for held button
 GREY = (128, 128, 128) # Added for wheel drawing
+BLUE = (0, 0, 200) # Added for Baccarat Player bet area
 
 # Roulette Colors
 ROULETTE_COLOR_RED = (200, 0, 0)
