@@ -5,8 +5,10 @@ import constants
 from game_state import GameState
 from .start_draw_poker_round import start_draw_poker_round
 from .start_multi_poker_round import start_multi_poker_round
+from .start_blackjack_round import start_blackjack_round
 from .process_drawing import process_drawing
 from .process_multi_drawing import process_multi_drawing
+from .process_blackjack_action import process_blackjack_action
 from .reset_game_variables import reset_game_variables
 
 def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any], screen: Optional[pygame.Surface] = None, fonts: Optional[Dict[str, pygame.font.Font]] = None) -> Dict[str, Any]:
@@ -87,8 +89,13 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
         elif action == constants.ACTION_CHOOSE_BLACKJACK:
             if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
                 if sounds.get("button"): sounds["button"].play()
-                # Placeholder: Just show a message for now
-                new_game_state['message'] = "Blackjack coming soon!"
+                # Transition to Blackjack IDLE state
+                reset_state = reset_game_variables()
+                new_game_state.update(reset_state)
+                new_game_state['current_state'] = constants.STATE_BLACKJACK_IDLE
+                new_game_state['message'] = "Click DEAL to play Blackjack ($1)"
+                new_game_state['player_hand'] = [] # Ensure blackjack state is clean
+                new_game_state['dealer_hand'] = []
 
         elif action == constants.ACTION_CHOOSE_ROULETTE:
             if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
@@ -98,9 +105,10 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
 
         elif action == constants.ACTION_RETURN_TO_MENU:
             # This action now means "Return to Game Selection Menu" from a game
-            if new_game_state['current_state'] not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT]:
+            current_state_str = new_game_state['current_state']
+            if current_state_str not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT]:
                 if sounds.get("button"): sounds["button"].play()
-                # Check if player is in the middle of a hand (after deal, before draw)
+                # Check if player is in the middle of a poker hand
                 if new_game_state['current_state'] in [constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
                     new_game_state['confirm_exit_destination'] = constants.STATE_GAME_SELECTION # Store where to go
                     new_game_state['previous_state_before_confirm'] = new_game_state['current_state'] # Store current state to return to if 'No'
@@ -108,6 +116,11 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 else: # Not in middle of hand, just go back
                     reset_state = reset_game_variables()
                     new_game_state.update(reset_state)
+                    # Clear potential game-specific state
+                    new_game_state['player_hand'] = []
+                    new_game_state['dealer_hand'] = []
+                    new_game_state['multi_hands'] = []
+                    new_game_state['multi_results'] = []
                     new_game_state['message'] = "" # Clear any lingering game messages
                     new_game_state['current_state'] = constants.STATE_GAME_SELECTION
 
@@ -164,6 +177,20 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                      new_game_state.update(reset_state)
                      new_game_state['message'] = f"GAME OVER! Need ${cost_next_multi} for Multi Poker."
                      new_game_state['current_state'] = constants.STATE_GAME_OVER
+            elif current_state_str == constants.STATE_BLACKJACK_IDLE: # Start new Blackjack game
+                if sounds.get("button"): sounds["button"].play()
+                round_state = start_blackjack_round(game_state_manager, sounds)
+                new_game_state.update(round_state)
+            elif current_state_str == constants.STATE_BLACKJACK_SHOWING_RESULT: # Start next Blackjack hand
+                if sounds.get("button"): sounds["button"].play()
+                if game_state_manager.money >= 1: # Cost for next blackjack game
+                    round_state = start_blackjack_round(game_state_manager, sounds)
+                    new_game_state.update(round_state)
+                else:
+                    reset_state = reset_game_variables()
+                    new_game_state.update(reset_state)
+                    new_game_state['message'] = "GAME OVER! Not enough money for Blackjack."
+                    new_game_state['current_state'] = constants.STATE_GAME_OVER
 
 
         elif action == constants.ACTION_HOLD_TOGGLE:
@@ -179,6 +206,12 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                         held_indices.sort() # Keep sorted for consistency
                         if sounds.get("hold"): sounds["hold"].play()
                     new_game_state['held_indices'] = held_indices # Update state
+
+        elif action == constants.ACTION_BLACKJACK_HIT or action == constants.ACTION_BLACKJACK_STAND:
+             if new_game_state['current_state'] == constants.STATE_BLACKJACK_PLAYER_TURN:
+                 # Let process_blackjack_action handle sound internally based on hit/stand
+                 action_result_state = process_blackjack_action(action, new_game_state, game_state_manager, sounds)
+                 new_game_state.update(action_result_state)
 
         elif action == constants.ACTION_PLAY_AGAIN:
              if new_game_state['current_state'] == constants.STATE_GAME_OVER:
@@ -197,6 +230,10 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 destination = new_game_state.get('confirm_exit_destination', constants.STATE_GAME_SELECTION) # Default safety
                 reset_state = reset_game_variables() # Reset hand, holds etc.
                 new_game_state.update(reset_state)
+                # Clear potential game-specific state
+                new_game_state['player_hand'] = []
+                new_game_state['dealer_hand'] = []
+                new_game_state['multi_hands'] = []
                 new_game_state['message'] = ""
                 new_game_state['current_state'] = destination
                 new_game_state['confirm_exit_destination'] = None # Clear destination

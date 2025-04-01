@@ -9,6 +9,7 @@ from deck import Deck # Keep for type hinting if needed
 from game_state import GameState
 from input_handler import InputHandler
 from poker_rules import HandRank # Keep for type hinting
+from blackjack_rules import get_hand_value, is_blackjack, determine_winner, BLACKJACK_PAYOUT, WIN_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT # Import Blackjack rules
 
 # --- Import Extracted Functions ---
 # Renderer Functions
@@ -19,6 +20,7 @@ from renderer_functions.draw_game_selection_menu import draw_game_selection_menu
 from renderer_functions.draw_game_screen import draw_game_screen
 from renderer_functions.draw_settings_menu import draw_settings_menu
 from renderer_functions.draw_confirm_exit import draw_confirm_exit
+from renderer_functions.draw_blackjack_screen import draw_blackjack_screen # Import Blackjack renderer
 
 # Game Logic Functions
 from game_functions.load_sounds import load_sounds
@@ -26,6 +28,9 @@ from game_functions.dummy_sound import DummySound # For type hinting
 from game_functions.process_input import process_input
 from game_functions.update_game import update_game
 from game_functions.reset_game_variables import reset_game_variables
+from game_functions.start_blackjack_round import start_blackjack_round
+from game_functions.process_blackjack_action import process_blackjack_action
+from game_functions.resolve_blackjack_round import resolve_blackjack_round
 
 
 def main():
@@ -94,6 +99,9 @@ def main():
         'result_message_flash_active': False,
         'result_message_flash_timer': 0,
         'result_message_flash_visible': True,
+        'player_hand': [], # Add for Blackjack
+        'dealer_hand': [], # Add for Blackjack
+        'dealer_shows_one_card': False, # Add for Blackjack rendering logic
         'deck': Deck(), # Start with a deck, even if unused initially
         'running': True,
         'sound_enabled': initial_sound_enabled, # Add sound setting
@@ -166,6 +174,9 @@ def main():
             draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'])
         elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
             draw_confirm_exit(screen, fonts)
+        elif game_state['current_state'] in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_PLAYER_TURN,
+                                             constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
+            draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
         else:
             # Draw the main game screen elements using the combined data
             draw_game_screen(screen, fonts, card_images, render_data, game_state)

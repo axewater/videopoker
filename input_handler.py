@@ -26,18 +26,13 @@ class InputHandler:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = event.pos
 
-                # --- Always check Quit button ---
-                if constants.TOP_MENU_QUIT_BUTTON_RECT.collidepoint(mouse_pos):
-                    actions.append((constants.ACTION_QUIT, None))
-                    continue # Don't process other clicks if quit is clicked
-
                 # --- State-dependent checks ---
                 if current_state == constants.STATE_TOP_MENU:
                     if constants.PLAY_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_GOTO_PLAY, None))
                     elif constants.SETTINGS_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_GOTO_SETTINGS, None))
-                    elif constants.TOP_MENU_QUIT_BUTTON_RECT.collidepoint(mouse_pos):
+                    elif constants.TOP_MENU_QUIT_BUTTON_RECT.collidepoint(mouse_pos): # Check Quit button only when in Top Menu
                          actions.append((constants.ACTION_QUIT, None)) # Quit from top menu
 
                 elif current_state == constants.STATE_GAME_SELECTION:
@@ -51,6 +46,14 @@ class InputHandler:
                         actions.append((constants.ACTION_CHOOSE_ROULETTE, None))
                     elif constants.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
                         actions.append((constants.ACTION_RETURN_TO_TOP_MENU, None))
+
+                elif current_state == constants.STATE_BLACKJACK_PLAYER_TURN:
+                    if constants.BLACKJACK_HIT_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_BLACKJACK_HIT, None))
+                    elif constants.BLACKJACK_STAND_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_BLACKJACK_STAND, None))
+                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos): # Allow exit during turn
+                        actions.append((constants.ACTION_RETURN_TO_MENU, None))
 
                 elif current_state in [constants.STATE_DRAW_POKER_IDLE, constants.STATE_MULTI_POKER_IDLE,
                                        constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD,
@@ -73,6 +76,13 @@ class InputHandler:
                                 if hold_rect.collidepoint(mouse_pos):
                                     actions.append((constants.ACTION_HOLD_TOGGLE, i))
                                     break # Process only one hold button click
+
+                elif current_state in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_SHOWING_RESULT]:
+                     # Check Deal button first
+                    if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_DEAL_DRAW, None))
+                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_RETURN_TO_MENU, None))
 
                 elif current_state == constants.STATE_GAME_OVER:
                     if constants.PLAY_AGAIN_BUTTON_RECT.collidepoint(mouse_pos):
