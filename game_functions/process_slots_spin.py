@@ -1,10 +1,11 @@
 # /game_functions/process_slots_spin.py
-import random # Added missing import
+import random
 from typing import Dict, Any
 
-import constants
+import config_states as states
+import config_animations as anim
 from game_state import GameState
-from slots_rules import spin_reels, REEL_STRIPS # Import REEL_STRIPS from slots_rules
+from slots_rules import spin_reels, REEL_STRIPS
 # Define the cost per spin
 SLOTS_COST_PER_SPIN = 1
 
@@ -31,8 +32,8 @@ def process_slots_spin(current_game_state: Dict[str, Any], game_state_manager: G
         new_state['slots_final_symbols'] = final_symbols # Store the result
 
         # 4. Set state to spinning and start timer
-        new_state['current_state'] = constants.STATE_SLOTS_SPINNING
-        new_state['slots_spin_timer'] = constants.SLOTS_SPIN_DURATION
+        new_state['current_state'] = states.STATE_SLOTS_SPINNING
+        new_state['slots_spin_timer'] = anim.SLOTS_SPIN_DURATION
         new_state['message'] = "Spinning..."
         new_state['result_message'] = "" # Clear previous result
 

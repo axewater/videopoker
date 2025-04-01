@@ -1,6 +1,8 @@
 from typing import List, Dict, Any, Optional
 
-import constants
+import config_layout_cards as layout_cards
+import config_animations as animations
+import config_states as states
 from card import Card
 from deck import Deck
 from game_state import GameState
@@ -12,7 +14,7 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
     Returns a dictionary of the updated game state variables.
     """
     updated_state = {} # Dictionary to hold changes
-    num_hands = constants.NUM_MULTI_HANDS
+    num_hands = layout_cards.NUM_MULTI_HANDS
     multi_hands_list = []
     multi_results_list = []
     total_winnings = 0
@@ -68,7 +70,7 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
         except IndexError as e:
             print(f"Error dealing for multi-hand {i+1}: {e}")
             updated_state['message'] = "Deck error during multi-draw!"
-            updated_state['current_state'] = constants.STATE_GAME_OVER # Or error state
+            updated_state['current_state'] = states.STATE_GAME_OVER # Or error state
             # Return partial results if needed, or just error out
             updated_state['multi_hands'] = multi_hands_list
             updated_state['multi_results'] = multi_results_list
@@ -86,7 +88,7 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
                     # Logic error if this happens
                     print(f"Error: Mismatch placing drawn cards in multi-hand {i+1}.")
                     updated_state['message'] = "Multi-hand card placement error!"
-                    updated_state['current_state'] = constants.STATE_GAME_OVER
+                    updated_state['current_state'] = states.STATE_GAME_OVER
                     return updated_state
 
 
@@ -94,7 +96,7 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
         if len(final_hand) != 5:
              print(f"Error: Multi-hand {i+1} reconstruction failed (size {len(final_hand)}).")
              updated_state['message'] = "Multi-hand reconstruction error!"
-             updated_state['current_state'] = constants.STATE_GAME_OVER
+             updated_state['current_state'] = states.STATE_GAME_OVER
              return updated_state
 
         # Evaluate this hand
@@ -116,10 +118,10 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
         # Trigger money animation for total amount
         updated_state['money_animation_active'] = True
         updated_state['money_animation_amount'] = total_winnings
-        updated_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        updated_state['money_animation_timer'] = animations.MONEY_ANIMATION_DURATION
         # Trigger result message flashing
         updated_state['result_message_flash_active'] = True
-        updated_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION # Use a constant
+        updated_state['result_message_flash_timer'] = animations.RESULT_FLASH_DURATION # Use a constant
         updated_state['result_message_flash_visible'] = True
     else:
         updated_state['result_message'] = "No winning hands."
@@ -138,7 +140,7 @@ def process_multi_drawing(base_hand: List[Card], held_indices: List[int], game_s
     if sounds.get("draw"):
         sounds["draw"].play() # Play draw sound once after all hands are set
     updated_state['message'] = "" # Clear action message
-    updated_state['current_state'] = constants.STATE_MULTI_POKER_SHOWING_RESULT
+    updated_state['current_state'] = states.STATE_MULTI_POKER_SHOWING_RESULT
     # Base hand remains the same, it's just used for holds
     updated_state['hand'] = base_hand
     # Held indices might be cleared or kept depending on game flow, let's clear them

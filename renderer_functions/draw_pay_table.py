@@ -1,7 +1,8 @@
 import pygame
 from typing import Optional, Dict
 
-import constants
+import config_colors as colors
+import config_fonts as fonts_cfg
 from poker_rules import PAY_TABLE, HandRank
 from .get_font import get_font
 
@@ -10,11 +11,11 @@ def draw_pay_table(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font], 
     pay_table_font = fonts['pay_table']
     line_height = pay_table_font.get_linesize()
     padding = 5
-    highlight_color = constants.YELLOW
-    background_color = constants.BLACK
-    text_color = constants.WHITE
-    title_color = constants.GOLD
-    colon_color = constants.WHITE # Color for the colon separator
+    highlight_color = colors.YELLOW
+    background_color = colors.BLACK
+    text_color = colors.WHITE
+    title_color = colors.GOLD
+    colon_color = colors.WHITE # Color for the colon separator
     colon_str = ":"
 
     # Sort ranks by payout (highest first)
@@ -23,7 +24,7 @@ def draw_pay_table(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font], 
 
     # Prepare title
     # Use get_font directly here as it's a helper within the original class logic
-    title_font = get_font(constants.PAY_TABLE_FONT_SIZE + 2)
+    title_font = get_font(fonts_cfg.PAY_TABLE_FONT_SIZE + 2)
     title_text = "--- Pay Table (Bet: 1) ---"
     title_surf = title_font.render(title_text, True, title_color)
     title_width = title_surf.get_width()

@@ -3,7 +3,7 @@ import os
 import sys
 from typing import Dict, List
 
-import constants
+from config_layout_slots import SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT
 
 # Define the order and names of the symbols
 # This order should ideally match how you want them displayed or processed

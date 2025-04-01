@@ -3,7 +3,8 @@ import os
 import sys
 from typing import Dict
 
-import constants
+import config_colors as colors
+import config_layout_cards as layout_cards
 
 def load_card_images(path: str) -> Dict[str, pygame.Surface]:
     """Loads card images from the specified path."""
@@ -30,7 +31,7 @@ def load_card_images(path: str) -> Dict[str, pygame.Surface]:
 
                 img = pygame.image.load(filepath).convert_alpha()
                 # Scale image if needed (optional, adjust CARD_WIDTH/HEIGHT in constants)
-                img = pygame.transform.scale(img, (constants.CARD_WIDTH, constants.CARD_HEIGHT))
+                img = pygame.transform.scale(img, (layout_cards.CARD_WIDTH, layout_cards.CARD_HEIGHT))
                 images[f"{rank}{suit_short}"] = img
 
     except pygame.error as e:

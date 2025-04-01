@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
-import constants
+import config_animations as animations
+import config_states as states
 from deck import Deck
 from game_state import GameState
 from blackjack_rules import get_hand_value, is_busted, should_dealer_hit, determine_winner, WIN_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT, BLACKJACK_PAYOUT
@@ -57,9 +58,9 @@ def resolve_blackjack_round(current_game_state: Dict[str, Any], game_state_manag
         # Trigger animations
         new_state['money_animation_active'] = True
         new_state['money_animation_amount'] = net_winnings + bet_amount
-        new_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        new_state['money_animation_timer'] = animations.MONEY_ANIMATION_DURATION
         new_state['result_message_flash_active'] = True
-        new_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION
+        new_state['result_message_flash_timer'] = animations.RESULT_FLASH_DURATION
         new_state['result_message_flash_visible'] = True
     elif payout_multiplier == PUSH_PAYOUT:
         game_state_manager.add_winnings(bet_amount) # Return original bet
@@ -76,6 +77,6 @@ def resolve_blackjack_round(current_game_state: Dict[str, Any], game_state_manag
 
 
     new_state['message'] = "Click DEAL for next hand"
-    new_state['current_state'] = constants.STATE_BLACKJACK_SHOWING_RESULT
+    new_state['current_state'] = states.STATE_BLACKJACK_SHOWING_RESULT
 
     return new_state

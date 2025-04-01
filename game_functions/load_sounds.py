@@ -2,7 +2,7 @@ import pygame
 import os
 from typing import Dict
 
-import constants
+import config_assets as assets
 from .dummy_sound import DummySound # Relative import
 
 def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySound]:
@@ -10,7 +10,7 @@ def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySoun
     sounds = {}
     # If sound is globally disabled, return dummy sounds immediately
     if not sound_enabled:
-        for name in constants.SOUND_FILES.keys():
+        for name in assets.SOUND_FILES.keys():
             sounds[name] = DummySound()
         print("Sound disabled. Using dummy sound objects.")
         return sounds
@@ -23,12 +23,12 @@ def load_sounds(sound_enabled: bool) -> Dict[str, pygame.mixer.Sound | DummySoun
         except pygame.error as e:
             print(f"Warning: Failed to initialize sound system in load_sounds: {e}")
             # Fallback to dummy sounds if init fails here
-            for name in constants.SOUND_FILES.keys():
+            for name in assets.SOUND_FILES.keys():
                 sounds[name] = DummySound()
             return sounds
 
-    for name, filename in constants.SOUND_FILES.items():
-        path = os.path.join(constants.SOUND_ASSET_PATH, filename)
+    for name, filename in assets.SOUND_FILES.items():
+        path = os.path.join(assets.SOUND_ASSET_PATH, filename)
         try:
             sound = pygame.mixer.Sound(path)
             sounds[name] = sound

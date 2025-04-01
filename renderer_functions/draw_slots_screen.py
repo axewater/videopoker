@@ -3,20 +3,23 @@ import pygame
 import random
 from typing import Dict, List, Optional, Any
 
-import constants
+import config_display as display
+import config_colors as colors
+import config_states as states
+import config_animations as anim
+import config_layout_slots as layout_slots
+import config_layout_general as layout_general
 from game_state import GameState
 from slots_rules import REEL_STRIPS, SLOTS_PAYOUTS, BAR_SYMBOLS # Need rules for display
 from .draw_text import draw_text
 from .draw_button import draw_button
 
 # --- Constants for Slots Layout ---
-SLOT_SYMBOL_WIDTH = 120 # Width of each symbol image
-SLOT_SYMBOL_HEIGHT = 100 # Height of each symbol image
-REEL_X_START = (constants.SCREEN_WIDTH - constants.NUM_REELS * SLOT_SYMBOL_WIDTH) // 2
+REEL_X_START = (display.SCREEN_WIDTH - layout_slots.NUM_REELS * layout_slots.SLOT_SYMBOL_WIDTH) // 2
 REEL_Y_POS = 150 # Y position for the payline (center of symbols)
 REEL_SPACING = 10 # Horizontal space between reels (if needed, currently adjacent)
 VISIBLE_ROWS = 3 # How many symbols are visible vertically per reel
-PAYLINE_Y_OFFSET = (VISIBLE_ROWS // 2) * SLOT_SYMBOL_HEIGHT # Offset to draw the central payline symbol
+PAYLINE_Y_OFFSET = (VISIBLE_ROWS // 2) * layout_slots.SLOT_SYMBOL_HEIGHT # Offset to draw the central payline symbol
 
 # --- Paytable Display Constants ---
 PAYTABLE_X = 20  # Adjusted X position further left
@@ -31,7 +34,7 @@ def draw_slots_paytable(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     y = PAYTABLE_Y
     line_height = PAYTABLE_LINE_HEIGHT
 
-    draw_text(surface, "--- Payouts (Bet: 1) ---", font, x, y, constants.GOLD)
+    draw_text(surface, "--- Payouts (Bet: 1) ---", font, x, y, colors.GOLD)
     y += line_height * 1.5
 
     # Define payouts to display (can be selective)
@@ -64,14 +67,14 @@ def draw_slots_paytable(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     for _, text in payouts_to_show:
         payout = payout_values.get(text, 0)
         if payout > 0:
-            draw_text(surface, f"{text}:", font, x, y, constants.WHITE)
-            draw_text(surface, f"{payout}x", font, x + PAYTABLE_COL_WIDTH, y, constants.YELLOW)
+            draw_text(surface, f"{text}:", font, x, y, colors.WHITE)
+            draw_text(surface, f"{payout}x", font, x + PAYTABLE_COL_WIDTH, y, colors.YELLOW)
             y += line_height
 
 
 def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font], slot_images: Dict[str, pygame.Surface], game_state: Dict[str, Any], game_state_manager: GameState):
     """Draws the Slots game screen."""
-    surface.fill(constants.DARK_GREEN)
+    surface.fill(colors.DARK_GREEN)
 
     current_state = game_state.get('current_state')
     message = game_state.get('message', '')
@@ -80,18 +83,18 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
     final_symbols = game_state.get('slots_final_symbols', ["?", "?", "?"]) # Default if not set
 
     # --- Draw Reels and Symbols ---
-    reel_positions = game_state.get('slots_reel_positions', [0] * constants.NUM_REELS)
+    reel_positions = game_state.get('slots_reel_positions', [0] * layout_slots.NUM_REELS)
 
-    for reel_index in range(constants.NUM_REELS):
+    for reel_index in range(layout_slots.NUM_REELS):
         reel_strip = REEL_STRIPS[reel_index]
         strip_len = len(reel_strip)
         current_pos_index = reel_positions[reel_index]
 
-        reel_x = REEL_X_START + reel_index * (SLOT_SYMBOL_WIDTH + REEL_SPACING)
+        reel_x = REEL_X_START + reel_index * (layout_slots.SLOT_SYMBOL_WIDTH + REEL_SPACING)
 
         # Determine symbols to show based on state
         symbols_to_draw = []
-        if current_state == constants.STATE_SLOTS_SPINNING:
+        if current_state == states.STATE_SLOTS_SPINNING:
             # Show rapidly changing symbols based on timer/position
             # Simple approach: advance position quickly
             reel_positions[reel_index] = (current_pos_index + random.randint(1, 3)) % strip_len # Faster spin visual
@@ -122,44 +125,44 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
         for row_index, symbol_name in enumerate(symbols_to_draw):
             symbol_img = slot_images.get(symbol_name)
             if symbol_img:
-                symbol_y = REEL_Y_POS + (row_index - (VISIBLE_ROWS // 2)) * SLOT_SYMBOL_HEIGHT
+                symbol_y = REEL_Y_POS + (row_index - (VISIBLE_ROWS // 2)) * layout_slots.SLOT_SYMBOL_HEIGHT
                 surface.blit(symbol_img, (reel_x, symbol_y))
             else:
                 # Draw placeholder if image missing
-                pygame.draw.rect(surface, constants.RED, (reel_x, symbol_y, SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT))
-                draw_text(surface, "?", fonts['button'], reel_x + SLOT_SYMBOL_WIDTH//2, symbol_y + SLOT_SYMBOL_HEIGHT//2, constants.WHITE, center=True)
+                pygame.draw.rect(surface, colors.RED, (reel_x, symbol_y, layout_slots.SLOT_SYMBOL_WIDTH, layout_slots.SLOT_SYMBOL_HEIGHT))
+                draw_text(surface, "?", fonts['button'], reel_x + layout_slots.SLOT_SYMBOL_WIDTH//2, symbol_y + layout_slots.SLOT_SYMBOL_HEIGHT//2, colors.WHITE, center=True)
 
     # Update reel positions in game state if they were changed during spinning draw
-    if current_state == constants.STATE_SLOTS_SPINNING:
+    if current_state == states.STATE_SLOTS_SPINNING:
         game_state['slots_reel_positions'] = reel_positions
 
     # --- Draw Payline Marker (optional) ---
-    payline_y = REEL_Y_POS + SLOT_SYMBOL_HEIGHT // 2
-    pygame.draw.line(surface, constants.YELLOW, (REEL_X_START - 10, payline_y), (REEL_X_START + constants.NUM_REELS * SLOT_SYMBOL_WIDTH + 10, payline_y), 3)
+    payline_y = REEL_Y_POS + layout_slots.SLOT_SYMBOL_HEIGHT // 2
+    pygame.draw.line(surface, colors.YELLOW, (REEL_X_START - 10, payline_y), (REEL_X_START + layout_slots.NUM_REELS * layout_slots.SLOT_SYMBOL_WIDTH + 10, payline_y), 3)
 
     # --- Draw Paytable ---
     draw_slots_paytable(surface, fonts)
 
     # --- Draw Money ---
     money_text = f"Money: ${game_state_manager.money}"
-    draw_text(surface, money_text, fonts['money'], constants.SCREEN_WIDTH - 150, 20, constants.GOLD) # Top right
+    draw_text(surface, money_text, fonts['money'], display.SCREEN_WIDTH - 150, 20, colors.GOLD) # Top right
     # Draw money animation if active
     if game_state.get('money_animation_active', False):
         amount = game_state.get('money_animation_amount', 0)
         anim_text = f"+${amount}" if amount >=0 else f"${amount}"
-        draw_text(surface, anim_text, fonts['money'], constants.SCREEN_WIDTH - 150, 20 + constants.MONEY_ANIMATION_OFFSET_Y, constants.YELLOW)
+        draw_text(surface, anim_text, fonts['money'], display.SCREEN_WIDTH - 150, 20 + anim.MONEY_ANIMATION_OFFSET_Y, colors.YELLOW)
 
     # --- Draw Messages ---
     if message:
-        draw_text(surface, message, fonts['message'], constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT - 150, constants.WHITE, center=True)
+        draw_text(surface, message, fonts['message'], display.SCREEN_WIDTH // 2, display.SCREEN_HEIGHT - 150, colors.WHITE, center=True)
     if result_message:
         # Check flashing state
         is_flashing = game_state.get('result_message_flash_active', False)
         is_visible = game_state.get('result_message_flash_visible', True)
         if not is_flashing or (is_flashing and is_visible):
             result_font = fonts['result']
-            color = constants.GOLD
-            text_x = constants.SCREEN_WIDTH // 2
+            color = colors.GOLD
+            text_x = display.SCREEN_WIDTH // 2
             text_y = REEL_Y_POS - 50 # Position above reels
             padding = 8
             # Calculate text size
@@ -167,30 +170,29 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
             text_rect = text_surf.get_rect(center=(text_x, text_y))
             # Draw background rectangle
             bg_rect = text_rect.inflate(padding * 2, padding * 2)
-            pygame.draw.rect(surface, constants.BLACK, bg_rect, border_radius=5)
+            pygame.draw.rect(surface, colors.BLACK, bg_rect, border_radius=5)
             # Draw text on top
             surface.blit(text_surf, text_rect)
 
     # --- Draw Buttons ---
     # Return to Game Selection Button
-    draw_button(surface, fonts, "Game Menu", constants.RETURN_TO_MENU_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
+    draw_button(surface, fonts, "Game Menu", layout_general.RETURN_TO_MENU_BUTTON_RECT, colors.BUTTON_OFF, colors.WHITE)
 
     # Spin Button (active only when idle or showing result)
     can_play_next = game_state_manager.money >= 1 # Check if can afford next $1 spin
-    button_color = constants.BUTTON_OFF
+    button_color = colors.BUTTON_OFF
     button_text = "SPIN"
 
-    if current_state == constants.STATE_SLOTS_IDLE or current_state == constants.STATE_SLOTS_SHOWING_RESULT:
-        button_color = constants.GREEN if can_play_next else constants.RED
+    if current_state == states.STATE_SLOTS_IDLE or current_state == states.STATE_SLOTS_SHOWING_RESULT:
+        button_color = colors.GREEN if can_play_next else colors.RED
     # Else (spinning): keep color as BUTTON_OFF (disabled look)
 
-    draw_button(surface, fonts, button_text, constants.SLOTS_SPIN_BUTTON_RECT, button_color, constants.WHITE)
+    draw_button(surface, fonts, button_text, layout_slots.SLOTS_SPIN_BUTTON_RECT, button_color, colors.WHITE)
 
     # Game Over Screen elements (handled by draw_game_screen, but could be drawn here too if needed)
-    if current_state == constants.STATE_GAME_OVER:
+    if current_state == states.STATE_GAME_OVER:
         # This state might be triggered from process_input if money runs out
-        draw_text(surface, "GAME OVER", fonts['game_over_large'], constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2 - 50, constants.RED, center=True)
+        draw_text(surface, "GAME OVER", fonts['game_over_large'], display.SCREEN_WIDTH // 2, display.SCREEN_HEIGHT // 2 - 50, colors.RED, center=True)
         final_money = game_state_manager.money
-        draw_text(surface, f"Final Money: ${final_money}", fonts['game_over_medium'], constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2, constants.WHITE, center=True)
-        draw_button(surface, fonts, "Play Again", constants.PLAY_AGAIN_BUTTON_RECT, constants.GREEN, constants.WHITE)
-
+        draw_text(surface, f"Final Money: ${final_money}", fonts['game_over_medium'], display.SCREEN_WIDTH // 2, display.SCREEN_HEIGHT // 2, colors.WHITE, center=True)
+        draw_button(surface, fonts, "Play Again", layout_general.PLAY_AGAIN_BUTTON_RECT, colors.GREEN, colors.WHITE)

@@ -1,6 +1,8 @@
 from typing import Dict, Any
 
-import constants
+import config_states as states
+import config_animations as anim
+from config_layout_slots import NUM_REELS
 from game_state import GameState
 from slots_rules import calculate_winnings # Import the function to calculate winnings
 from .process_slots_spin import SLOTS_COST_PER_SPIN # Import cost per spin
@@ -16,7 +18,7 @@ def resolve_slots_round(current_game_state: Dict[str, Any], game_state_manager: 
 
     # 1. Get the final symbols determined before the spin
     final_symbols = new_state.get('slots_final_symbols')
-    if not final_symbols or len(final_symbols) != constants.NUM_REELS:
+    if not final_symbols or len(final_symbols) != NUM_REELS:
         print(f"Error: Final symbols not found or invalid in state: {final_symbols}")
         # Handle error gracefully - assume no win
         final_symbols = ["?", "?", "?"] # Placeholder
@@ -35,9 +37,9 @@ def resolve_slots_round(current_game_state: Dict[str, Any], game_state_manager: 
         # Trigger animations
         new_state['money_animation_active'] = True
         new_state['money_animation_amount'] = winnings
-        new_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        new_state['money_animation_timer'] = anim.MONEY_ANIMATION_DURATION
         new_state['result_message_flash_active'] = True
-        new_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION
+        new_state['result_message_flash_timer'] = anim.RESULT_FLASH_DURATION
         new_state['result_message_flash_visible'] = True
     else:
         new_state['result_message'] = "No win this spin."
@@ -48,8 +50,8 @@ def resolve_slots_round(current_game_state: Dict[str, Any], game_state_manager: 
         new_state['result_message_flash_active'] = False
 
     # 4. Update State for Result Display
-    new_state['current_state'] = constants.STATE_SLOTS_SHOWING_RESULT
-    new_state['slots_result_pause_timer'] = constants.SLOTS_RESULT_PAUSE_DURATION # Start pause timer
+    new_state['current_state'] = states.STATE_SLOTS_SHOWING_RESULT
+    new_state['slots_result_pause_timer'] = anim.SLOTS_RESULT_PAUSE_DURATION # Start pause timer
     new_state['message'] = "Click SPIN to play again." # Next action prompt
 
     # Reset the round bet tracker in GameState (optional, depends on how it's used)

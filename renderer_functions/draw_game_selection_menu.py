@@ -2,7 +2,9 @@
 import pygame
 from typing import Dict, Optional
 
-import constants
+import config_display as display
+import config_colors as colors
+import config_layout_general as layout_general
 from .draw_text import draw_text
 from .draw_button import draw_button
 
@@ -11,24 +13,24 @@ def draw_game_selection_menu(surface: pygame.Surface, fonts: Dict[str, pygame.fo
     if backdrop_image:
         surface.blit(backdrop_image, (0, 0))
     else:
-        surface.fill(constants.DARK_GREEN) # Fallback fill
+        surface.fill(colors.DARK_GREEN) # Fallback fill
 
     # Title
-    draw_text(surface, "Select Game", fonts['game_over_large'], constants.SCREEN_WIDTH // 2, 80, constants.GOLD, center=True) # Adjusted Title Y
+    draw_text(surface, "Select Game", fonts['game_over_large'], display.SCREEN_WIDTH // 2, 80, colors.GOLD, center=True) # Adjusted Title Y
 
     # Display Current Money (Bank Account) - Top Right
     money_text = f"Bank: ${current_money}"
-    draw_text(surface, money_text, fonts['money'], constants.SCREEN_WIDTH - 150, 20, constants.GOLD)
+    draw_text(surface, money_text, fonts['money'], display.SCREEN_WIDTH - 150, 20, colors.GOLD)
 
     # Draw Buttons - All use GREEN now
-    draw_button(surface, fonts, "Draw Poker", constants.DRAW_POKER_BUTTON_RECT, constants.GREEN, constants.WHITE)
-    draw_button(surface, fonts, "Multi Poker", constants.MULTI_POKER_BUTTON_RECT, constants.GREEN, constants.WHITE)
-    draw_button(surface, fonts, "Blackjack", constants.BLACKJACK_BUTTON_RECT, constants.GREEN, constants.WHITE) # Changed color
-    draw_button(surface, fonts, "Roulette", constants.ROULETTE_BUTTON_RECT, constants.GREEN, constants.WHITE) # Changed color
-    draw_button(surface, fonts, "Slots", constants.SLOTS_BUTTON_RECT, constants.GREEN, constants.WHITE) # Added Slots button
+    draw_button(surface, fonts, "Draw Poker", layout_general.DRAW_POKER_BUTTON_RECT, colors.GREEN, colors.WHITE)
+    draw_button(surface, fonts, "Multi Poker", layout_general.MULTI_POKER_BUTTON_RECT, colors.GREEN, colors.WHITE)
+    draw_button(surface, fonts, "Blackjack", layout_general.BLACKJACK_BUTTON_RECT, colors.GREEN, colors.WHITE) # Changed color
+    draw_button(surface, fonts, "Roulette", layout_general.ROULETTE_BUTTON_RECT, colors.GREEN, colors.WHITE) # Changed color
+    draw_button(surface, fonts, "Slots", layout_general.SLOTS_BUTTON_RECT, colors.GREEN, colors.WHITE) # Added Slots button
 
     # Restart Game Button (use a distinct color like RED)
-    draw_button(surface, fonts, "Restart", constants.RESTART_GAME_BUTTON_RECT, constants.RED, constants.WHITE)
+    draw_button(surface, fonts, "Restart", layout_general.RESTART_GAME_BUTTON_RECT, colors.RED, colors.WHITE)
 
     # Back Button (reuse settings back button rect/position)
-    draw_button(surface, fonts, "Back", constants.SETTINGS_BACK_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE) # Keep Back button grey
+    draw_button(surface, fonts, "Back", layout_general.SETTINGS_BACK_BUTTON_RECT, colors.BUTTON_OFF, colors.WHITE) # Keep Back button grey

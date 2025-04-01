@@ -4,7 +4,10 @@ import pygame
 import math
 from typing import Dict, Any, Tuple
 
-import constants
+import config_display as display
+import config_animations as animations
+import config_layout_roulette as layout_roulette
+import config_colors as colors
 from .draw_text import draw_text
 from .get_font import get_font # Helper to get fonts if needed directly
 
@@ -12,19 +15,19 @@ from .get_font import get_font # Helper to get fonts if needed directly
 def get_number_color(number: int) -> Tuple[int, int, int]:
     """Returns the Pygame color for a given roulette number."""
     if number == 0:
-        return constants.ROULETTE_COLOR_GREEN
-    elif number in constants.ROULETTE_RED_NUMBERS:
-        return constants.ROULETTE_COLOR_RED
-    elif number in constants.ROULETTE_BLACK_NUMBERS:
-        return constants.ROULETTE_COLOR_BLACK
+        return colors.ROULETTE_COLOR_GREEN
+    elif number in layout_roulette.ROULETTE_RED_NUMBERS:
+        return colors.ROULETTE_COLOR_RED
+    elif number in layout_roulette.ROULETTE_BLACK_NUMBERS:
+        return colors.ROULETTE_COLOR_BLACK
     else:
-        return constants.WHITE # Should not happen
+        return colors.WHITE # Should not happen
 
 def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font], game_state: Dict[str, Any]):
     """Draws the spinning wheel overlay animation, including the pause/flash phase."""
 
-    center_x = constants.SCREEN_WIDTH // 2
-    center_y = constants.SCREEN_HEIGHT // 2
+    center_x = display.SCREEN_WIDTH // 2
+    center_y = display.SCREEN_HEIGHT // 2
     wheel_radius = min(center_x, center_y) - 50 # Radius of the main wheel
     number_radius = wheel_radius - 25 # Radius for placing numbers
     # --- Ball related variables removed ---
@@ -32,14 +35,14 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     # ball_radius = 8
 
     # --- Semi-transparent background overlay ---
-    overlay = pygame.Surface((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT), pygame.SRCALPHA)
+    overlay = pygame.Surface((display.SCREEN_WIDTH, display.SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 200)) # Dark overlay
     surface.blit(overlay, (0, 0))
 
     # --- Calculate Rotation ---
     spin_timer = game_state.get('roulette_spin_timer', 0)
     pause_timer = game_state.get('roulette_pause_timer', 0) # Get pause timer
-    total_duration = constants.ROULETTE_SPIN_DURATION
+    total_duration = animations.ROULETTE_SPIN_DURATION
     winning_number = game_state.get('roulette_winning_number')
 
     if winning_number is None:
@@ -47,12 +50,12 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         winning_number = 0
 
     try:
-        winning_number_index = constants.ROULETTE_WHEEL_NUMBERS.index(winning_number)
+        winning_number_index = layout_roulette.ROULETTE_WHEEL_NUMBERS.index(winning_number)
     except ValueError:
         print(f"Error: Winning number {winning_number} not found in wheel layout.")
         winning_number_index = 0
 
-    num_slots = len(constants.ROULETTE_WHEEL_NUMBERS)
+    num_slots = len(layout_roulette.ROULETTE_WHEEL_NUMBERS)
     angle_per_slot = 360 / num_slots
     # Target angle for the *wheel* rotation to place the winning slot at the top pointer
     target_angle = (winning_number_index * angle_per_slot) + (angle_per_slot / 2)
@@ -92,7 +95,7 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     is_flashing = game_state.get('winning_slot_flash_active', False)
     is_flash_visible = game_state.get('winning_slot_flash_visible', True)
 
-    for i, number in enumerate(constants.ROULETTE_WHEEL_NUMBERS):
+    for i, number in enumerate(layout_roulette.ROULETTE_WHEEL_NUMBERS):
         start_angle_deg = i * angle_per_slot
         end_angle_deg = (i + 1) * angle_per_slot
         color = get_number_color(number)
@@ -101,14 +104,14 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         is_winning_slot = (number == winning_number)
         current_color = color
         border_thickness = 1 # Default border
-        border_color = constants.GOLD
+        border_color = colors.GOLD
 
         # Only flash when the wheel is stopped (spin_timer == 0)
         if spin_timer == 0 and is_winning_slot and is_flashing:
             if is_flash_visible:
                 # Highlight when flash is visible (e.g., bright yellow border)
                 border_thickness = 3
-                border_color = constants.ROULETTE_FLASH_COLOR
+                border_color = colors.ROULETTE_FLASH_COLOR
             else:
                  pass # Draw normally when not visible during flash cycle
 
@@ -134,7 +137,7 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         text_x = wheel_center + number_radius * math.cos(math.radians(text_angle_deg - 90))
         text_y = wheel_center + number_radius * math.sin(math.radians(text_angle_deg - 90))
 
-        num_surf = number_font.render(str(number), True, constants.WHITE)
+        num_surf = number_font.render(str(number), True, colors.WHITE)
         # Rotation angle needs to be negative for clockwise text rotation in Pygame
         num_surf_rotated = pygame.transform.rotate(num_surf, -text_angle_deg)
         num_rect = num_surf_rotated.get_rect(center=(text_x, text_y))
@@ -148,8 +151,8 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     surface.blit(rotated_wheel_surf, rotated_rect)
 
     # Draw center pin
-    pygame.draw.circle(surface, constants.GOLD, (center_x, center_y), 15)
-    pygame.draw.circle(surface, constants.BLACK, (center_x, center_y), 13)
+    pygame.draw.circle(surface, colors.GOLD, (center_x, center_y), 15)
+    pygame.draw.circle(surface, colors.BLACK, (center_x, center_y), 13)
 
     # --- Draw Ball removed ---
 
@@ -160,10 +163,9 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         (center_x - pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom left
         (center_x + pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom right
     ]
-    pygame.draw.polygon(surface, constants.GOLD, pointer_points)
+    pygame.draw.polygon(surface, colors.GOLD, pointer_points)
 
     # Display winning number text only when wheel is stopped (pause phase)
     if spin_timer == 0:
          win_text = f"Result: {winning_number}"
-         draw_text(surface, win_text, fonts['result'], center_x, center_y + wheel_radius + 40, constants.YELLOW, center=True)
-
+         draw_text(surface, win_text, fonts['result'], center_x, center_y + wheel_radius + 40, colors.YELLOW, center=True)

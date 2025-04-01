@@ -2,10 +2,16 @@
 import pygame
 import sys
 from typing import Dict, Any
-import os # Added for path joining
+import os
 
 # Local Imports
-import constants
+# --- Config Imports ---
+import config_display as display
+import config_fonts as fonts_cfg
+import config_colors as colors
+import config_states as states
+import config_assets as assets
+import config_animations as anim
 from card import Card
 from deck import Deck
 from game_state import GameState
@@ -56,7 +62,7 @@ def main():
     else:
         initial_sound_enabled = True
 
-    screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+    screen = pygame.display.set_mode((display.SCREEN_WIDTH, display.SCREEN_HEIGHT))
 
     # --- Helper Function to Apply Volume ---
     def apply_volume(volume_level: float, sounds_dict: Dict[str, Any]):
@@ -71,21 +77,22 @@ def main():
 
     # --- Load Assets ---
     fonts = {
-        'money': get_font(constants.MONEY_FONT_SIZE),
-        'message': get_font(constants.MESSAGE_FONT_SIZE),
-        'pay_table': get_font(constants.PAY_TABLE_FONT_SIZE),
-        'button': get_font(constants.BUTTON_FONT_SIZE),
-        'result': get_font(constants.RESULT_FONT_SIZE),
-        'multi_result': get_font(constants.MULTI_RESULT_FONT_SIZE),
-        'hold': get_font(constants.HOLD_FONT_SIZE),
+        'money': get_font(fonts_cfg.MONEY_FONT_SIZE),
+        'message': get_font(fonts_cfg.MESSAGE_FONT_SIZE),
+        'pay_table': get_font(fonts_cfg.PAY_TABLE_FONT_SIZE),
+        'button': get_font(fonts_cfg.BUTTON_FONT_SIZE),
+        'result': get_font(fonts_cfg.RESULT_FONT_SIZE),
+        'multi_result': get_font(fonts_cfg.MULTI_RESULT_FONT_SIZE),
+        'hold': get_font(fonts_cfg.HOLD_FONT_SIZE),
         'game_over_large': get_font(64),
         'game_over_medium': get_font(32),
     }
-    card_images = load_card_images(constants.CARD_ASSET_PATH)
+    card_images = load_card_images(assets.CARD_ASSET_PATH)
     # Load Slot Images
     from renderer_functions.load_slot_images import load_slot_images
-    slot_images = load_slot_images(constants.SLOTS_ASSET_PATH,
-                                   (constants.SLOT_SYMBOL_WIDTH, constants.SLOT_SYMBOL_HEIGHT))
+    from config_layout_slots import SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT
+    slot_images = load_slot_images(assets.SLOTS_ASSET_PATH,
+                                   (SLOT_SYMBOL_WIDTH, SLOT_SYMBOL_HEIGHT))
 
     # --- Load Backdrop Image ---
     backdrop_image = None
@@ -94,8 +101,8 @@ def main():
         if os.path.exists(backdrop_path):
             backdrop_image = pygame.image.load(backdrop_path).convert()
             # Scale if necessary to fit the screen
-            if backdrop_image.get_size() != (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT):
-                backdrop_image = pygame.transform.scale(backdrop_image, (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+            if backdrop_image.get_size() != (display.SCREEN_WIDTH, display.SCREEN_HEIGHT):
+                backdrop_image = pygame.transform.scale(backdrop_image, (display.SCREEN_WIDTH, display.SCREEN_HEIGHT))
             print(f"Loaded backdrop image from: {backdrop_path}")
         else:
             print(f"Warning: Backdrop image not found at {backdrop_path}. Menus will use default background.")
@@ -113,7 +120,7 @@ def main():
 
     # --- Initialize Game State Variables ---
     game_state: Dict[str, Any] = {
-        'current_state': constants.STATE_TOP_MENU,
+        'current_state': states.STATE_TOP_MENU,
         'hand': [],
         'multi_hands': [],
         'multi_results': [],
@@ -192,7 +199,7 @@ def main():
 
         # 4. Render Output
         # Default fill, may be overwritten by backdrop
-        screen.fill(constants.DARK_GREEN)
+        screen.fill(colors.DARK_GREEN)
 
         render_data = {
             'current_state': game_state['current_state'],
@@ -209,22 +216,22 @@ def main():
             'money_animation_amount': game_state['money_animation_amount'],
         }
 
-        if game_state['current_state'] == constants.STATE_TOP_MENU:
+        if game_state['current_state'] == states.STATE_TOP_MENU:
             draw_top_menu(screen, fonts, backdrop_image) # Pass backdrop
-        elif game_state['current_state'] == constants.STATE_GAME_SELECTION:
+        elif game_state['current_state'] == states.STATE_GAME_SELECTION:
             draw_game_selection_menu(screen, fonts, game_state_manager.money, backdrop_image) # Pass backdrop
-        elif game_state['current_state'] == constants.STATE_SETTINGS:
+        elif game_state['current_state'] == states.STATE_SETTINGS:
             draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'], backdrop_image) # Pass backdrop
-        elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
+        elif game_state['current_state'] == states.STATE_CONFIRM_EXIT:
             # Confirmation dialog overlays, so no backdrop applied here intentionally
             draw_confirm_exit(screen, fonts, game_state)
-        elif game_state['current_state'] in [constants.STATE_BLACKJACK_IDLE, constants.STATE_BLACKJACK_PLAYER_TURN,
-                                             constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
+        elif game_state['current_state'] in [states.STATE_BLACKJACK_IDLE, states.STATE_BLACKJACK_PLAYER_TURN,
+                                             states.STATE_BLACKJACK_DEALER_TURN, states.STATE_BLACKJACK_SHOWING_RESULT]:
             draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
-        elif game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_SPINNING, constants.STATE_ROULETTE_RESULT]:
+        elif game_state['current_state'] in [states.STATE_ROULETTE_BETTING, states.STATE_ROULETTE_SPINNING, states.STATE_ROULETTE_RESULT]:
             # draw_roulette_screen handles drawing table OR wheel based on state
             draw_roulette_screen(screen, fonts, game_state, game_state_manager)
-        elif game_state['current_state'] in [constants.STATE_SLOTS_IDLE, constants.STATE_SLOTS_SPINNING, constants.STATE_SLOTS_SHOWING_RESULT]:
+        elif game_state['current_state'] in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SPINNING, states.STATE_SLOTS_SHOWING_RESULT]:
             # Draw the slots screen
             draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager)
         else: # Draw/Multi Poker

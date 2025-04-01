@@ -2,7 +2,8 @@ import random
 from typing import List, Tuple, Dict
 
 # --- Constants ---
-NUM_REELS = 3
+from config_layout_slots import NUM_REELS
+
 # Define the symbols present on each virtual reel strip
 # More frequent symbols appear more often
 # Order matters for visual representation during spin, but final result is random pick
@@ -118,4 +119,3 @@ if __name__ == '__main__':
     for line, name in test_lines:
         winnings, win_name_calc = calculate_winnings(line, 1)
         print(f"Test: {line} ({name}) -> Win: ${winnings} ({win_name_calc})")
-

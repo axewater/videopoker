@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
-import constants
+import config_actions as actions
+import config_states as states
 from deck import Deck
 from game_state import GameState
 from blackjack_rules import get_hand_value, is_busted
@@ -15,7 +16,7 @@ def process_blackjack_action(action: str, current_game_state: Dict[str, Any], ga
     player_hand = new_state.get('player_hand', [])
     deck = new_state.get('deck')
 
-    if action == constants.ACTION_BLACKJACK_HIT:
+    if action == actions.ACTION_BLACKJACK_HIT:
         if deck and len(deck) > 0:
             # Deal one card to player
             player_hand.extend(deck.deal(1))
@@ -32,12 +33,12 @@ def process_blackjack_action(action: str, current_game_state: Dict[str, Any], ga
             else:
                 # Still player's turn, update message if needed
                 new_state['message'] = "Hit or Stand?"
-                new_state['current_state'] = constants.STATE_BLACKJACK_PLAYER_TURN # Remain in player turn
+                new_state['current_state'] = states.STATE_BLACKJACK_PLAYER_TURN # Remain in player turn
         else:
             new_state['message'] = "Deck empty error!"
-            new_state['current_state'] = constants.STATE_GAME_OVER # Error state
+            new_state['current_state'] = states.STATE_GAME_OVER # Error state
 
-    elif action == constants.ACTION_BLACKJACK_STAND:
+    elif action == actions.ACTION_BLACKJACK_STAND:
         if sounds.get("button"): sounds["button"].play() # Sound for clicking stand
         # Player stands, move to dealer's turn and resolve the round
         new_state['message'] = "Dealer's Turn..."

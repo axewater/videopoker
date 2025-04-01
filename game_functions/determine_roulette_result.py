@@ -1,7 +1,8 @@
 import random
 from typing import Dict, Any
 
-import constants
+import config_animations as animations
+import config_states as states
 from game_state import GameState
 # No longer need calculate_roulette_winnings here directly
 # from .calculate_roulette_winnings import calculate_roulette_winnings
@@ -79,9 +80,9 @@ def determine_roulette_result(current_game_state: Dict[str, Any], game_state_man
         total_returned = net_winnings + original_winning_bets_value
         new_state['money_animation_active'] = True
         new_state['money_animation_amount'] = total_returned
-        new_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        new_state['money_animation_timer'] = animations.MONEY_ANIMATION_DURATION
         new_state['result_message_flash_active'] = True
-        new_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION
+        new_state['result_message_flash_timer'] = animations.RESULT_FLASH_DURATION
         new_state['result_message_flash_visible'] = True
     elif net_winnings < 0:
         if sounds.get("lose"): sounds["lose"].play()
@@ -93,7 +94,7 @@ def determine_roulette_result(current_game_state: Dict[str, Any], game_state_man
 
 
     # 4. Update State for Result Display
-    new_state['current_state'] = constants.STATE_ROULETTE_RESULT
+    new_state['current_state'] = states.STATE_ROULETTE_RESULT
     new_state['message'] = "Click 'Clear Bets' or place new bets." # Next action prompt
 
     # Bets are kept in the state until explicitly cleared by the player

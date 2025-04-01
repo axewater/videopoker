@@ -1,7 +1,7 @@
 # /game_functions/place_roulette_bet.py
 from typing import Dict, Any
 
-import constants
+import config_display as display
 from game_state import GameState
 
 # Define the amount placed per click

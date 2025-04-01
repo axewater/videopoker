@@ -2,7 +2,9 @@
 
 from typing import Dict, Any
 
-import constants
+import config_states as states
+import config_animations as anim
+import config_layout_cards as layout_cards
 from .determine_roulette_result import determine_roulette_result
 from .resolve_slots_round import resolve_slots_round
 from game_state import GameState
@@ -36,11 +38,11 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
         else:
             new_state['result_message_flash_timer'] = flash_timer
             # Toggle visibility based on interval
-            if flash_timer % constants.RESULT_FLASH_INTERVAL == 0:
+            if flash_timer % anim.RESULT_FLASH_INTERVAL == 0:
                 new_state['result_message_flash_visible'] = not new_state.get('result_message_flash_visible', True)
 
     # Update Roulette spin/pause/flash logic
-    if new_state['current_state'] == constants.STATE_ROULETTE_SPINNING:
+    if new_state['current_state'] == states.STATE_ROULETTE_SPINNING:
         spin_timer = new_state.get('roulette_spin_timer', 0)
         pause_timer = new_state.get('roulette_pause_timer', 0)
 
@@ -50,9 +52,9 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             new_state['roulette_spin_timer'] = spin_timer
             if spin_timer == 0:
                 # Spin just finished, start pause and flashing
-                new_state['roulette_pause_timer'] = constants.ROULETTE_RESULT_PAUSE_DURATION
+                new_state['roulette_pause_timer'] = anim.ROULETTE_RESULT_PAUSE_DURATION
                 new_state['winning_slot_flash_active'] = True
-                new_state['winning_slot_flash_count'] = constants.ROULETTE_FLASH_COUNT * 2 # Total on/off cycles
+                new_state['winning_slot_flash_count'] = anim.ROULETTE_FLASH_COUNT * 2 # Total on/off cycles
                 new_state['winning_slot_flash_visible'] = True # Start visible
 
         elif pause_timer > 0:
@@ -64,7 +66,7 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             flash_count = new_state.get('winning_slot_flash_count', 0)
             if flash_count > 0:
                  # Decrement count every interval
-                 if pause_timer % constants.ROULETTE_FLASH_INTERVAL == 0:
+                 if pause_timer % anim.ROULETTE_FLASH_INTERVAL == 0:
                      new_state['winning_slot_flash_visible'] = not new_state.get('winning_slot_flash_visible', True)
                      flash_count -= 1
                      new_state['winning_slot_flash_count'] = flash_count
@@ -82,7 +84,7 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
                 new_state['winning_slot_flash_count'] = 0
 
     # Update Slots spin/pause logic
-    elif new_state['current_state'] == constants.STATE_SLOTS_SPINNING:
+    elif new_state['current_state'] == states.STATE_SLOTS_SPINNING:
         spin_timer = new_state.get('slots_spin_timer', 0)
         spin_timer -= 1
         new_state['slots_spin_timer'] = spin_timer
@@ -91,28 +93,28 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             resolve_state = resolve_slots_round(new_state, game_state_manager, sounds)
             new_state.update(resolve_state)
 
-    elif new_state['current_state'] == constants.STATE_SLOTS_SHOWING_RESULT:
+    elif new_state['current_state'] == states.STATE_SLOTS_SHOWING_RESULT:
         pause_timer = new_state.get('slots_result_pause_timer', 0)
         pause_timer -= 1
         new_state['slots_result_pause_timer'] = pause_timer
         if pause_timer <= 0:
             # Pause finished, return to idle state
-            new_state['current_state'] = constants.STATE_SLOTS_IDLE
+            new_state['current_state'] = states.STATE_SLOTS_IDLE
             new_state['message'] = "Click SPIN to play ($1)" # Reset message
 
     # Check for game over condition (logic remains the same)
     current_state_str = new_state['current_state']
     needs_money_check_states = [
-        constants.STATE_DRAW_POKER_SHOWING_RESULT,
-        constants.STATE_MULTI_POKER_SHOWING_RESULT,
-        constants.STATE_BLACKJACK_SHOWING_RESULT,
+        states.STATE_DRAW_POKER_SHOWING_RESULT,
+        states.STATE_MULTI_POKER_SHOWING_RESULT,
+        states.STATE_BLACKJACK_SHOWING_RESULT,
     ]
     if current_state_str in needs_money_check_states:
-        is_multi = current_state_str == constants.STATE_MULTI_POKER_SHOWING_RESULT
-        cost_next_game = constants.NUM_MULTI_HANDS if is_multi else 1
+        is_multi = current_state_str == states.STATE_MULTI_POKER_SHOWING_RESULT
+        cost_next_game = layout_cards.NUM_MULTI_HANDS if is_multi else 1
         if not game_state_manager.can_afford_bet(cost_next_game):
-            if new_state['current_state'] != constants.STATE_GAME_OVER:
+            if new_state['current_state'] != states.STATE_GAME_OVER:
                  new_state['message'] = f"GAME OVER! Need ${cost_next_game} for next round."
-                 new_state['current_state'] = constants.STATE_GAME_OVER
+                 new_state['current_state'] = states.STATE_GAME_OVER
 
     return new_state

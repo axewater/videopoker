@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict, Any
 
-import constants
+import config_states as states
+import config_animations as anim
 from card import Card
 from deck import Deck
 from game_state import GameState
@@ -30,7 +31,7 @@ def process_drawing(hand: List[Card], held_indices: List[int], deck: Deck, game_
     except IndexError as e:
          print(f"Error: {e}")
          updated_state['message'] = "Deck error! Please restart."
-         updated_state['current_state'] = constants.STATE_GAME_OVER
+         updated_state['current_state'] = states.STATE_GAME_OVER
          updated_state['hand'] = hand # Return original hand on error
          return updated_state
 
@@ -44,7 +45,7 @@ def process_drawing(hand: List[Card], held_indices: List[int], deck: Deck, game_
             else:
                 print(f"Error: Mismatch drawing cards. Needed card for index {i}, but ran out of new cards.")
                 updated_state['message'] = "Card drawing error!"
-                updated_state['current_state'] = constants.STATE_GAME_OVER
+                updated_state['current_state'] = states.STATE_GAME_OVER
                 updated_state['hand'] = hand # Return original hand
                 return updated_state
 
@@ -65,10 +66,10 @@ def process_drawing(hand: List[Card], held_indices: List[int], deck: Deck, game_
         # Trigger money animation
         updated_state['money_animation_active'] = True
         updated_state['money_animation_amount'] = winnings
-        updated_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+        updated_state['money_animation_timer'] = anim.MONEY_ANIMATION_DURATION
         # Trigger result message flashing
         updated_state['result_message_flash_active'] = True
-        updated_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION # Use a constant
+        updated_state['result_message_flash_timer'] = anim.RESULT_FLASH_DURATION # Use a constant
         updated_state['result_message_flash_visible'] = True
     else:
         updated_state['result_message'] = f"Result: {hand_name}. No win."
@@ -87,7 +88,7 @@ def process_drawing(hand: List[Card], held_indices: List[int], deck: Deck, game_
     if sounds.get("draw"):
         sounds["draw"].play() # Play draw sound (after cards are replaced)
     updated_state['message'] = "" # Clear the action message
-    updated_state['current_state'] = constants.STATE_DRAW_POKER_SHOWING_RESULT
+    updated_state['current_state'] = states.STATE_DRAW_POKER_SHOWING_RESULT
     updated_state['deck'] = deck # Pass back the potentially modified deck
 
     return updated_state

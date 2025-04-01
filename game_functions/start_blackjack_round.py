@@ -1,6 +1,7 @@
 from typing import Dict, Any
 
-import constants
+import config_animations as animations
+import config_states as states
 from deck import Deck
 from game_state import GameState
 from blackjack_rules import is_blackjack, determine_winner, BLACKJACK_PAYOUT, LOSS_PAYOUT, PUSH_PAYOUT
@@ -14,7 +15,6 @@ def start_blackjack_round(game_state_manager: GameState, sounds: Dict[str, Any])
     bet_amount = 1 # Fixed bet for now
     game_state_manager.set_cost_per_game(bet_amount)
 
-    # Corrected method name below
     if game_state_manager.start_fixed_cost_game(): 
         updated_state = reset_game_variables() # Reset general variables
         deck = Deck() # Get a fresh shuffled deck
@@ -48,9 +48,9 @@ def start_blackjack_round(game_state_manager: GameState, sounds: Dict[str, Any])
                 # Trigger animations
                 updated_state['money_animation_active'] = True
                 updated_state['money_animation_amount'] = winnings + bet_amount
-                updated_state['money_animation_timer'] = constants.MONEY_ANIMATION_DURATION
+                updated_state['money_animation_timer'] = animations.MONEY_ANIMATION_DURATION
                 updated_state['result_message_flash_active'] = True
-                updated_state['result_message_flash_timer'] = constants.RESULT_FLASH_DURATION
+                updated_state['result_message_flash_timer'] = animations.RESULT_FLASH_DURATION
                 updated_state['result_message_flash_visible'] = True
             elif payout_multiplier == PUSH_PAYOUT:
                 game_state_manager.add_winnings(bet_amount) # Return original bet
@@ -65,12 +65,12 @@ def start_blackjack_round(game_state_manager: GameState, sounds: Dict[str, Any])
 
 
             updated_state['message'] = "Click DEAL for next hand"
-            updated_state['current_state'] = constants.STATE_BLACKJACK_SHOWING_RESULT
+            updated_state['current_state'] = states.STATE_BLACKJACK_SHOWING_RESULT
 
         else:
             # No immediate Blackjack resolution, proceed to player's turn
             updated_state['message'] = "Your Turn: Hit or Stand?"
-            updated_state['current_state'] = constants.STATE_BLACKJACK_PLAYER_TURN
+            updated_state['current_state'] = states.STATE_BLACKJACK_PLAYER_TURN
 
         return updated_state
     else:
@@ -78,7 +78,7 @@ def start_blackjack_round(game_state_manager: GameState, sounds: Dict[str, Any])
         updated_state = reset_game_variables()
         updated_state['message'] = "GAME OVER! Not enough money for Blackjack."
         updated_state['result_message'] = ""
-        updated_state['current_state'] = constants.STATE_GAME_OVER
+        updated_state['current_state'] = states.STATE_GAME_OVER
         updated_state['deck'] = Deck() # Still provide a deck object
         # Ensure Blackjack specific state is cleared
         updated_state['player_hand'] = []

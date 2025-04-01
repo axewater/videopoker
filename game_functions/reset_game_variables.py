@@ -1,7 +1,6 @@
 # /game_functions/reset_game_variables.py
 from typing import Dict, Any, List, Optional
 
-import constants
 from poker_rules import HandRank # Import HandRank if needed for type hint
 
 def reset_game_variables() -> Dict[str, Any]:

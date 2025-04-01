@@ -2,7 +2,10 @@
 import pygame
 from typing import Dict, Optional
 
-import constants
+# Removed: import constants
+import config_colors as colors # Added
+import config_display as display # Added
+import config_layout_general as layout # Added
 from .draw_text import draw_text
 from .draw_button import draw_button
 
@@ -11,33 +14,43 @@ def draw_settings_menu(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fon
     if backdrop_image:
         surface.blit(backdrop_image, (0, 0))
     else:
-        surface.fill(constants.DARK_GREEN) # Fallback fill
+        # Updated constants reference
+        surface.fill(colors.DARK_GREEN) # Fallback fill
 
     # Title
-    draw_text(surface, "Settings", fonts['game_over_large'], constants.SCREEN_WIDTH // 2, 150, constants.GOLD, center=True)
+    # Updated constants references
+    draw_text(surface, "Settings", fonts['game_over_large'], display.SCREEN_WIDTH // 2, 150, colors.GOLD, center=True)
 
     # Sound Toggle Button/Text
     sound_status = "ON" if sound_enabled else "OFF"
     sound_text = f"Sound: {sound_status}"
     # Draw the text centered within the toggle rect
-    draw_text(surface, sound_text, fonts['button'], constants.SOUND_TOGGLE_RECT.centerx, constants.SOUND_TOGGLE_RECT.centery, constants.WHITE, center=True)
+    # Updated constants references
+    draw_text(surface, sound_text, fonts['button'], layout.SOUND_TOGGLE_RECT.centerx, layout.SOUND_TOGGLE_RECT.centery, colors.WHITE, center=True)
     # Draw a border around the text to indicate it's clickable
-    pygame.draw.rect(surface, constants.WHITE, constants.SOUND_TOGGLE_RECT, 2, border_radius=5)
+    # Updated constants references
+    pygame.draw.rect(surface, colors.WHITE, layout.SOUND_TOGGLE_RECT, 2, border_radius=5)
 
     # Volume Controls (only if sound is enabled)
     if sound_enabled:
-        button_color = constants.GREEN
-        text_color = constants.WHITE
+        # Updated constants references
+        button_color = colors.GREEN
+        text_color = colors.WHITE
         # Draw Volume Down Button
-        draw_button(surface, fonts, "-", constants.VOLUME_DOWN_BUTTON_RECT, button_color, text_color)
+        # Updated constants references
+        draw_button(surface, fonts, "-", layout.VOLUME_DOWN_BUTTON_RECT, button_color, text_color)
         # Draw Volume Up Button
-        draw_button(surface, fonts, "+", constants.VOLUME_UP_BUTTON_RECT, button_color, text_color)
+        # Updated constants references
+        draw_button(surface, fonts, "+", layout.VOLUME_UP_BUTTON_RECT, button_color, text_color)
         # Draw Volume Level Display (e.g., "Volume: 70%")
         volume_percent = int(volume_level * 100)
         volume_text = f"Volume: {volume_percent}%"
         # Position volume text below the Sound toggle
-        text_y = constants.SOUND_TOGGLE_RECT.bottom + 30
-        draw_text(surface, volume_text, fonts['message'], constants.SCREEN_WIDTH // 2, text_y, constants.WHITE, center=True)
+        # Updated constants references
+        text_y = layout.SOUND_TOGGLE_RECT.bottom + 30
+        draw_text(surface, volume_text, fonts['message'], display.SCREEN_WIDTH // 2, text_y, colors.WHITE, center=True)
 
     # Back Button
-    draw_button(surface, fonts, "Back", constants.SETTINGS_BACK_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
+    # Updated constants references
+    draw_button(surface, fonts, "Back", layout.SETTINGS_BACK_BUTTON_RECT, colors.BUTTON_OFF, colors.WHITE)
+
