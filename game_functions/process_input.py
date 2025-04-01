@@ -84,6 +84,18 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 new_game_state['current_state'] = constants.STATE_MULTI_POKER_IDLE
                 new_game_state['message'] = f"Click DEAL to start (${constants.NUM_MULTI_HANDS})"
 
+        elif action == constants.ACTION_CHOOSE_BLACKJACK:
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # Placeholder: Just show a message for now
+                new_game_state['message'] = "Blackjack coming soon!"
+
+        elif action == constants.ACTION_CHOOSE_ROULETTE:
+            if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
+                if sounds.get("button"): sounds["button"].play()
+                # Placeholder: Just show a message for now
+                new_game_state['message'] = "Roulette coming soon!"
+
         elif action == constants.ACTION_RETURN_TO_MENU:
             # This action now means "Return to Game Selection Menu" from a game
             if new_game_state['current_state'] not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT]:

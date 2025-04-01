@@ -161,7 +161,7 @@ def main():
         if game_state['current_state'] == constants.STATE_TOP_MENU:
             draw_top_menu(screen, fonts)
         elif game_state['current_state'] == constants.STATE_GAME_SELECTION:
-            draw_game_selection_menu(screen, fonts)
+            draw_game_selection_menu(screen, fonts, game_state_manager.money)
         elif game_state['current_state'] == constants.STATE_SETTINGS:
             draw_settings_menu(screen, fonts, game_state['sound_enabled'], game_state['volume_level'])
         elif game_state['current_state'] == constants.STATE_CONFIRM_EXIT:
