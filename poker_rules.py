@@ -35,12 +35,18 @@ PAY_TABLE = {
 def get_pay_table_string() -> str:
     """Returns a formatted string representation of the pay table."""
     lines = ["--- Pay Table (Bet: 1) ---"]
+    
     # Sort by payout for display (descending)
     sorted_ranks = sorted([rank for rank in PAY_TABLE if PAY_TABLE[rank][1] > 0], key=lambda k: PAY_TABLE[k][1], reverse=True)
+    
+    # Find the maximum length of the hand names for alignment
+    max_name_width = 0
+    if sorted_ranks:
+        max_name_width = max(len(PAY_TABLE[rank][0]) for rank in sorted_ranks)
+
     for rank in sorted_ranks:
         name, payout = PAY_TABLE[rank]
-        if payout > 0: # Only show winning hands
-             lines.append(f"{name:<18}: {payout:>3}x")
+        lines.append(f"{name:<{max_name_width}} : {payout:>3}x") # Left-align name, right-align payout
     return "\n".join(lines)
 
 
