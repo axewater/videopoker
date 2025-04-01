@@ -3,19 +3,25 @@ import sys
 import os
 from typing import List, Tuple, Dict, Optional
 
+# Display dimensions
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+# Card and spacing dimensions
+CARD_WIDTH = 100
+CARD_HEIGHT = 145
+CARD_SPACING = 10
+HOLD_BUTTON_HEIGHT = 40
+HOLD_BUTTON_SPACING = 5
+
+# Calculate hand positioning
+HAND_Y_POS = 250
+HAND_X_START = (SCREEN_WIDTH - 5 * (CARD_WIDTH + CARD_SPACING)) // 2
+
 from card import Card
 from deck import Deck
 from game_state import GameState
 from poker_rules import evaluate_hand, PAY_TABLE, get_pay_table_string
-
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-CARD_WIDTH = 71
-CARD_HEIGHT = 96
-HAND_Y_POS = 400
-HAND_X_START = (SCREEN_WIDTH - 5 * (CARD_WIDTH + 10)) // 2
-CARD_SPACING = 10
-HELD_OFFSET = -20
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -23,6 +29,8 @@ RED = (200, 0, 0)
 GREEN = (0, 150, 0)
 GOLD = (218, 165, 32)
 DARK_GREEN = (0, 100, 0)
+BUTTON_OFF = (100, 100, 100)
+BUTTON_ON = (255, 215, 0)
 
 STATE_START_MENU = "START_MENU"
 STATE_DEALING = "DEALING"
@@ -61,14 +69,13 @@ def load_card_images(path: str = "assets/cards") -> Dict[str, pygame.Surface]:
     return images
 
 def get_card_image(card: Card, card_images: Dict[str, pygame.Surface]) -> pygame.Surface:
-    # Map the suit symbols (like '♠') to the characters used in filenames ('S')
     suit_map = {
         "♠": "S",
         "♥": "H",
         "♦": "D",
         "♣": "C",
     }
-    suit_short = suit_map.get(card.suit, '?') # Get the short suit, default to '?' if not found
+    suit_short = suit_map.get(card.suit, '?')
     key = f"{card.rank}{suit_short}"
     if key not in card_images:
         print(f"Error: Image not found for card key: {key}")
@@ -88,18 +95,23 @@ def draw_text(surface: pygame.Surface, text: str, size: int, x: int, y: int, col
     surface.blit(text_surface, text_rect)
 
 def draw_hand(surface: pygame.Surface, hand: List[Card], held_indices: List[int], card_images: Dict[str, pygame.Surface], card_rects: List[pygame.Rect]):
-    held_font = pygame.font.Font(None, 24)
+    hold_font = pygame.font.Font(None, 24)
     for i, card in enumerate(hand):
         img = get_card_image(card, card_images)
         rect = card_rects[i]
-        y_pos = rect.y
-        if i in held_indices:
-            y_pos += HELD_OFFSET
-            held_text = held_font.render("HELD", True, GOLD)
-            held_rect = held_text.get_rect(centerx=rect.centerx, bottom=rect.top - 5)
-            surface.blit(held_text, held_rect)
-
-        surface.blit(img, (rect.x, y_pos))
+        surface.blit(img, rect)
+        
+        hold_rect = pygame.Rect(
+            rect.x, 
+            rect.bottom + HOLD_BUTTON_SPACING,
+            CARD_WIDTH,
+            HOLD_BUTTON_HEIGHT
+        )
+        button_color = BUTTON_ON if i in held_indices else BUTTON_OFF
+        pygame.draw.rect(surface, button_color, hold_rect, border_radius=5)
+        hold_text = hold_font.render("HOLD", True, WHITE)
+        text_rect = hold_text.get_rect(center=hold_rect.center)
+        surface.blit(hold_text, text_rect)
 
 def draw_pay_table(surface: pygame.Surface, font_size: int, x: int, y: int):
     pay_table_font = pygame.font.Font(None, font_size)
@@ -157,9 +169,14 @@ def main():
 
     button_width = 150
     button_height = 50
-    deal_draw_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, HAND_Y_POS + CARD_HEIGHT + 30, button_width, button_height)
+    deal_draw_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, HAND_Y_POS + CARD_HEIGHT + HOLD_BUTTON_HEIGHT + 40, button_width, button_height)
     quit_button_rect = pygame.Rect(SCREEN_WIDTH - button_width - 20, SCREEN_HEIGHT - button_height - 20, button_width, button_height)
     play_again_button_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + 50, button_width, button_height)
+
+    # Add animation variables
+    card_flip_animation = []
+    animation_speed = 10
+    animation_frames = 30
 
     running = True
     while running:
@@ -181,7 +198,7 @@ def main():
                              deck = Deck()
                              hand = deck.deal(5)
                              held_indices = []
-                             message = "Click cards to hold, then click DRAW"
+                             message = "Click HOLD buttons, then click DRAW"
                              result_message = ""
                              final_hand_rank_name = ""
                              current_state = STATE_WAITING_FOR_HOLD
@@ -190,11 +207,25 @@ def main():
                              current_state = STATE_GAME_OVER
 
                 elif current_state == STATE_WAITING_FOR_HOLD:
-                    for i, rect in enumerate(card_rects):
-                        click_check_rect = rect.copy()
-                        if i in held_indices:
-                            click_check_rect.y += HELD_OFFSET
-                        if click_check_rect.collidepoint(mouse_pos):
+                    # Check for clicks on cards or hold buttons
+                    for i, card_rect in enumerate(card_rects):
+                        # Check if card was clicked
+                        if card_rect.collidepoint(mouse_pos):
+                            if i in held_indices:
+                                held_indices.remove(i)
+                            else:
+                                held_indices.append(i)
+                            held_indices.sort()
+                            break
+                            
+                        # Check if hold button was clicked
+                        hold_rect = pygame.Rect(
+                            card_rect.x,
+                            card_rect.bottom + HOLD_BUTTON_SPACING,
+                            CARD_WIDTH,
+                            HOLD_BUTTON_HEIGHT
+                        )
+                        if hold_rect.collidepoint(mouse_pos):
                             if i in held_indices:
                                 held_indices.remove(i)
                             else:
@@ -239,12 +270,32 @@ def main():
                         if payout > 0:
                             winnings = payout * game_state_manager.cost_per_game
                             result_message = f"WINNER! {hand_name}! +${winnings}"
+                            current_state = STATE_SHOWING_RESULT
                             game_state_manager.add_winnings(winnings)
                         else:
                             result_message = f"Result: {hand_name}. No win."
+                            current_state = STATE_SHOWING_RESULT
 
-                        message = "Click DEAL to play again."
+                elif current_state == STATE_DRAWING:
+                    if len(card_flip_animation) < len(replace_indices):
+                        for idx in replace_indices:
+                            card_flip_animation.append({
+                                'index': idx,
+                                'frame': 0,
+                                'complete': False
+                            })
+                    
+                    all_complete = True
+                    for anim in card_flip_animation:
+                        if not anim['complete']:
+                            anim['frame'] += 1
+                            if anim['frame'] >= animation_frames:
+                                anim['complete'] = True
+                            all_complete = False
+                    
+                    if all_complete:
                         current_state = STATE_SHOWING_RESULT
+                        card_flip_animation = []
 
                 elif current_state == STATE_SHOWING_RESULT:
                     if deal_draw_button_rect.collidepoint(mouse_pos):
@@ -253,7 +304,7 @@ def main():
                             deck = Deck()
                             hand = deck.deal(5)
                             held_indices = []
-                            message = "Click cards to hold, then click DRAW"
+                            message = "Click HOLD buttons, then click DRAW"
                             result_message = ""
                             final_hand_rank_name = ""
                             current_state = STATE_WAITING_FOR_HOLD
@@ -297,7 +348,7 @@ def main():
         elif current_state == STATE_WAITING_FOR_HOLD:
             button_text = "DRAW"
             button_color = GREEN
-            draw_button(screen, button_text, deal_draw_button_rect, button_color, WHITE, button_font_size)
+            draw_button(screen, button_text, deal_draw_button_rect, button_color,WHITE, button_font_size)
         elif current_state == STATE_SHOWING_RESULT:
              button_text = "DEAL"
              button_color = GREEN if game_state_manager.can_play() else RED
