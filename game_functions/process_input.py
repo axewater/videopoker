@@ -331,9 +331,9 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                  if new_game_state['current_state'] == constants.STATE_ROULETTE_RESULT:
                      new_game_state['roulette_bets'] = {}
                      new_game_state['roulette_winning_number'] = None
-                     new_state['result_message'] = "" # Use new_state here
-                     new_state['message'] = "Place your bets!"
-                     new_state['current_state'] = constants.STATE_ROULETTE_BETTING # Change state back
+                     new_game_state['result_message'] = "" # Use new_state here
+                     new_game_state['message'] = "Place your bets!"
+                     new_game_state['current_state'] = constants.STATE_ROULETTE_BETTING # Change state back
                      game_state_manager.reset_round_bet() # Reset internal tracker for new round
 
                  bet_result_state = place_roulette_bet(payload, new_game_state, game_state_manager, sounds)

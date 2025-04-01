@@ -53,7 +53,8 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
 
     num_slots = len(constants.ROULETTE_WHEEL_NUMBERS)
     angle_per_slot = 360 / num_slots
-    target_angle = (winning_number_index * angle_per_slot) + (angle_per_slot / 2) # Target for wheel rotation
+    # Target angle for the *wheel* rotation to place the winning slot at the top pointer
+    target_angle = (winning_number_index * angle_per_slot) + (angle_per_slot / 2)
 
     current_angle = 0
     ball_current_angle = 0
@@ -65,29 +66,35 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         progress = time_elapsed / total_duration
         eased_progress = 1 - (1 - progress) ** 3 # Cubic ease-out
 
+        # Wheel rotation
         total_spins = 5
         current_angle = (total_spins * 360 + target_angle) * eased_progress
 
-        # Ball animation during spin
-        ball_total_rotation = - (total_spins + 3) * 360
+        # Ball animation during spin (opposite direction)
+        ball_total_rotation = - (total_spins + 3) * 360 # Negative for opposite direction
         ball_current_angle = ball_total_rotation * eased_progress
 
-        # Ball settles towards target in last part of spin
+        # Ball settles towards the pointer (angle 0) in the last part of the spin
         settle_start_progress = 0.85
-        ball_final_angle_deg = -target_angle # Ball position relative to top pointer
+        # *** FIX: Ball's final angle should be 0 (at the pointer) ***
+        ball_final_angle_deg = 0
         if progress >= settle_start_progress:
              settle_progress = (progress - settle_start_progress) / (1 - settle_start_progress)
+             # Angle where the smooth spinning part ends
              spin_angle_at_settle = ball_total_rotation * (1 - (1 - settle_start_progress)**3)
+             # Interpolate from the spin angle towards the final angle (0)
              ball_current_angle = spin_angle_at_settle + (ball_final_angle_deg - spin_angle_at_settle) * settle_progress
 
     else: # spin_timer is 0, wheel is stopped (might be pausing/flashing)
         current_angle = target_angle # Wheel stops at target angle
-        ball_current_angle = -target_angle # Ball stops opposite the winning number (relative to top pointer)
+        # *** FIX: Ball stops at angle 0 (relative to the pointer) ***
+        ball_current_angle = 0
 
     # Calculate final ball screen coordinates
-    ball_angle_rad = math.radians(ball_current_angle + 90) # Adjust for math coordinates
+    # Ball angle 0 corresponds to trig angle 90 (top)
+    ball_angle_rad = math.radians(ball_current_angle + 90)
     ball_x = center_x + ball_track_radius * math.cos(ball_angle_rad)
-    ball_y = center_y - ball_track_radius * math.sin(ball_angle_rad)
+    ball_y = center_y - ball_track_radius * math.sin(ball_angle_rad) # Use minus for Pygame's inverted Y
 
     # --- Draw Wheel ---
     wheel_surf_size = wheel_radius * 2
@@ -112,20 +119,20 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         border_thickness = 1 # Default border
         border_color = constants.GOLD
 
-        if is_winning_slot and is_flashing:
+        # Only flash when the wheel is stopped (spin_timer == 0)
+        if spin_timer == 0 and is_winning_slot and is_flashing:
             if is_flash_visible:
                 # Highlight when flash is visible (e.g., bright yellow border)
                 border_thickness = 3
                 border_color = constants.ROULETTE_FLASH_COLOR
             else:
-                # Optional: Dim the color when flash is not visible
-                # current_color = tuple(max(0, c - 50) for c in color) # Example dimming
-                pass # Or just draw normally when not visible
+                 pass # Draw normally when not visible during flash cycle
 
         # Calculate points for polygon wedge
         points = [(wheel_center, wheel_center)]
         steps = 5
         for j in range(steps + 1):
+            # Angle adjustment for Pygame coordinates (-90 degrees)
             angle = math.radians(start_angle_deg + (end_angle_deg - start_angle_deg) * j / steps - 90)
             x = wheel_center + wheel_radius * math.cos(angle)
             y = wheel_center + wheel_radius * math.sin(angle)
@@ -133,21 +140,23 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
 
         pygame.draw.polygon(wheel_surf, current_color, points) # Use current_color
         # Draw border with potentially adjusted thickness/color
+        # Exclude the center point when drawing lines
         pygame.draw.lines(wheel_surf, border_color, False, points[1:], border_thickness)
 
 
         # Draw number text (rotated)
         text_angle_deg = start_angle_deg + angle_per_slot / 2
-        text_angle_rad = math.radians(-text_angle_deg)
+        # Position calculation based on angle
         text_x = wheel_center + number_radius * math.cos(math.radians(text_angle_deg - 90))
         text_y = wheel_center + number_radius * math.sin(math.radians(text_angle_deg - 90))
 
         num_surf = number_font.render(str(number), True, constants.WHITE)
-        num_surf_rotated = pygame.transform.rotate(num_surf, text_angle_deg)
+        # Rotation angle needs to be negative for clockwise text rotation in Pygame
+        num_surf_rotated = pygame.transform.rotate(num_surf, -text_angle_deg)
         num_rect = num_surf_rotated.get_rect(center=(text_x, text_y))
         wheel_surf.blit(num_surf_rotated, num_rect)
 
-    # Rotate the entire wheel surface
+    # Rotate the entire wheel surface based on the calculated current_angle
     rotated_wheel_surf = pygame.transform.rotate(wheel_surf, current_angle)
     rotated_rect = rotated_wheel_surf.get_rect(center=(center_x, center_y))
 
@@ -165,9 +174,9 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     # --- Draw Pointer ---
     pointer_size = 20
     pointer_points = [
-        (center_x, center_y - wheel_radius - 5),
-        (center_x - pointer_size // 2, center_y - wheel_radius - pointer_size - 5),
-        (center_x + pointer_size // 2, center_y - wheel_radius - pointer_size - 5),
+        (center_x, center_y - wheel_radius - 5), # Tip
+        (center_x - pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom left
+        (center_x + pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom right
     ]
     pygame.draw.polygon(surface, constants.GOLD, pointer_points)
 
@@ -175,3 +184,4 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     if spin_timer == 0:
          win_text = f"Result: {winning_number}"
          draw_text(surface, win_text, fonts['result'], center_x, center_y + wheel_radius + 40, constants.YELLOW, center=True)
+
