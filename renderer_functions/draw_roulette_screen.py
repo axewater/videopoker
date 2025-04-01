@@ -1,3 +1,4 @@
+# /renderer_functions/draw_roulette_screen.py
 import pygame
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -29,50 +30,51 @@ def draw_roulette_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.F
     winning_number = game_state.get('roulette_winning_number', None) # Get winning number if available
 
     chip_font = fonts['pay_table'] # Use a smaller font for chip text
+    number_font = fonts['button'] # Font for numbers in boxes
+
     # --- Draw Money ---
     money_text = f"Money: ${game_state_manager.money}"
     draw_text(surface, money_text, fonts['money'], constants.SCREEN_WIDTH - 150, 20, constants.GOLD) # Top right
 
-    # --- Draw Betting Grid (Simplified) ---
-    grid_x_start = 50
-    grid_y_start = 100
-    number_box_width = 40
-    number_box_height = 40
-    grid_spacing = 5
+    # --- Draw Betting Grid ---
 
     # Draw 0
     zero_rect = constants.ROULETTE_NUMBER_RECTS.get(0)
     if zero_rect:
         pygame.draw.rect(surface, constants.ROULETTE_COLOR_GREEN, zero_rect)
         pygame.draw.rect(surface, constants.WHITE, zero_rect, 1) # Border
-        draw_text(surface, "0", fonts['button'], zero_rect.centerx, zero_rect.centery, constants.WHITE, center=True)
+        draw_text(surface, "0", number_font, zero_rect.centerx, zero_rect.centery, constants.WHITE, center=True)
         # Draw chip if bet exists
         bet_key = "number_0"
         if bet_key in bets:
             pygame.draw.circle(surface, constants.ROULETTE_CHIP_COLOR, zero_rect.center, constants.ROULETTE_CHIP_RADIUS)
             draw_text(surface, str(bets[bet_key]), chip_font, zero_rect.centerx, zero_rect.centery, constants.ROULETTE_CHIP_TEXT_COLOR, center=True)
+        # Highlight winning number 0
+        if winning_number == 0:
+            pygame.draw.rect(surface, constants.YELLOW, zero_rect, 3) # Draw yellow border
 
-    # Draw numbers 1-36 in a 3x12 grid
+    # Draw numbers 1-36
     for number in range(1, 37):
         rect = constants.ROULETTE_NUMBER_RECTS.get(number)
         if rect:
             color = get_number_color(number)
             pygame.draw.rect(surface, color, rect)
             pygame.draw.rect(surface, constants.WHITE, rect, 1) # Border
-            text_color = constants.WHITE if color != constants.ROULETTE_COLOR_GREEN else constants.BLACK # Adjust text for visibility
-            # Only draw number text if no chip is present, otherwise draw chip
+            # Use white text for red/black, black text for green/yellow background
+            text_color = constants.BLACK if color in [constants.ROULETTE_COLOR_GREEN, constants.YELLOW] else constants.WHITE
+
             bet_key = f"number_{number}"
             if bet_key in bets:
                  pygame.draw.circle(surface, constants.ROULETTE_CHIP_COLOR, rect.center, constants.ROULETTE_CHIP_RADIUS)
                  draw_text(surface, str(bets[bet_key]), chip_font, rect.centerx, rect.centery, constants.ROULETTE_CHIP_TEXT_COLOR, center=True)
             else:
-                 draw_text(surface, str(number), fonts['button'], rect.centerx, rect.centery, text_color, center=True)
+                 draw_text(surface, str(number), number_font, rect.centerx, rect.centery, text_color, center=True)
 
             # Highlight winning number
             if number == winning_number and winning_number is not None:
                  pygame.draw.rect(surface, constants.YELLOW, rect, 3) # Draw yellow border
 
-    # --- Draw Outside Bets (Placeholders) ---
+    # --- Draw Outside Bets ---
     # Helper to draw outside bet areas and chips
     def draw_outside_bet(bet_key: str, rect: Optional[pygame.Rect], text: str, color: Tuple[int, int, int]):
         if rect:
@@ -80,7 +82,8 @@ def draw_roulette_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.F
             pygame.draw.rect(surface, constants.WHITE, rect, 1) # Border
             draw_text(surface, text, fonts['pay_table'], rect.centerx, rect.centery, constants.WHITE, center=True)
             if bet_key in bets:
-                chip_pos = (rect.centerx, rect.centery + constants.ROULETTE_CHIP_RADIUS // 2) # Offset chip slightly
+                # Slightly offset chip position to avoid covering text completely, if needed
+                chip_pos = rect.center
                 pygame.draw.circle(surface, constants.ROULETTE_CHIP_COLOR, chip_pos, constants.ROULETTE_CHIP_RADIUS)
                 draw_text(surface, str(bets[bet_key]), chip_font, chip_pos[0], chip_pos[1], constants.ROULETTE_CHIP_TEXT_COLOR, center=True)
 
@@ -89,10 +92,10 @@ def draw_roulette_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.F
     draw_outside_bet("dozen_2", constants.ROULETTE_BET_DOZEN2_RECT, "2nd 12", constants.ROULETTE_COLOR_GREEN)
     draw_outside_bet("dozen_3", constants.ROULETTE_BET_DOZEN3_RECT, "3rd 12", constants.ROULETTE_COLOR_GREEN)
 
-    # Draw Columns (Text rotated?) - Simple text for now
-    draw_outside_bet("column_1", constants.ROULETTE_BET_COL1_RECT, "2:1", constants.ROULETTE_COLOR_GREEN)
-    draw_outside_bet("column_2", constants.ROULETTE_BET_COL2_RECT, "2:1", constants.ROULETTE_COLOR_GREEN)
-    draw_outside_bet("column_3", constants.ROULETTE_BET_COL3_RECT, "2:1", constants.ROULETTE_COLOR_GREEN)
+    # Draw Columns (Using "2:1" text as requested, centered)
+    draw_outside_bet("column_3", constants.ROULETTE_BET_COL3_RECT, "2:1", constants.ROULETTE_COLOR_GREEN) # Corresponds to top row numbers (1, 4, ...)
+    draw_outside_bet("column_2", constants.ROULETTE_BET_COL2_RECT, "2:1", constants.ROULETTE_COLOR_GREEN) # Corresponds to middle row numbers (2, 5, ...)
+    draw_outside_bet("column_1", constants.ROULETTE_BET_COL1_RECT, "2:1", constants.ROULETTE_COLOR_GREEN) # Corresponds to bottom row numbers (3, 6, ...)
 
     # Draw Even Money Bets
     draw_outside_bet("half_low", constants.ROULETTE_BET_LOW_RECT, "1-18", constants.ROULETTE_COLOR_GREEN)
@@ -102,34 +105,30 @@ def draw_roulette_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.F
     draw_outside_bet("parity_odd", constants.ROULETTE_BET_ODD_RECT, "ODD", constants.ROULETTE_COLOR_GREEN)
     draw_outside_bet("half_high", constants.ROULETTE_BET_HIGH_RECT, "19-36", constants.ROULETTE_COLOR_GREEN)
 
-    # --- Draw Spin Button ---
-    can_spin = len(bets) > 0 and game_state_manager.can_afford_bet(game_state.get('roulette_total_bet', 0))
+    # --- Draw Buttons ---
+    can_spin = len(bets) > 0 # Can spin if any bet is placed (affordability checked in process_input)
     spin_button_color = constants.GREEN if can_spin else constants.BUTTON_OFF
 
     if current_state == constants.STATE_ROULETTE_BETTING:
         draw_button(surface, fonts, "SPIN", constants.ROULETTE_SPIN_BUTTON_RECT, spin_button_color, constants.WHITE)
-        # Draw Clear Bets button only during betting
         clear_button_color = constants.RED if len(bets) > 0 else constants.BUTTON_OFF
         draw_button(surface, fonts, "Clear Bets", constants.ROULETTE_CLEAR_BETS_BUTTON_RECT, clear_button_color, constants.WHITE)
     elif current_state == constants.STATE_ROULETTE_SPINNING:
         draw_button(surface, fonts, "Spinning...", constants.ROULETTE_SPIN_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
-        # Hide Clear Bets button during spin
+        # Hide Clear Bets during spin
     elif current_state == constants.STATE_ROULETTE_RESULT:
-        # After result, allow placing new bets (implicitly clears old ones) or clearing
-        # Change state back to betting? Or require a click? Let's require Clear/Bet click.
-        # Show SPIN as disabled, but allow Clear Bets
+        # Show SPIN as disabled, allow Clear Bets or placing new bets (handled by input)
         draw_button(surface, fonts, "SPIN", constants.ROULETTE_SPIN_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
-        clear_button_color = constants.RED if len(bets) > 0 else constants.BUTTON_OFF # Should have bets after result usually
+        clear_button_color = constants.RED # Always allow clear after result if bets were placed
         draw_button(surface, fonts, "Clear Bets", constants.ROULETTE_CLEAR_BETS_BUTTON_RECT, clear_button_color, constants.WHITE)
-
 
     # --- Draw Messages ---
     if message:
         draw_text(surface, message, fonts['message'], constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT - 100, constants.WHITE, center=True)
     if result_message:
-        # TODO: Add flashing/background for result message like other games
-        # Position result message near the top or center? Let's try near top-center.
+        # Position result message near the top-center
         draw_text(surface, result_message, fonts['result'], constants.SCREEN_WIDTH // 2, 60, constants.GOLD, center=True)
 
     # --- Draw Return to Menu Button ---
     draw_button(surface, fonts, "Game Menu", constants.RETURN_TO_MENU_BUTTON_RECT, constants.BUTTON_OFF, constants.WHITE)
+

@@ -1,3 +1,4 @@
+# /input_handler.py
 import pygame
 from typing import List, Optional, Tuple, Dict, Any # Added Dict, Any
 
@@ -146,11 +147,8 @@ class InputHandler:
                     if not clicked_on_bet_area:
                         if constants.ROULETTE_SPIN_BUTTON_RECT.collidepoint(mouse_pos):
                              actions.append((constants.ACTION_ROULETTE_SPIN, None))
-                        # Check for ACTION_ROULETTE_CLEAR_BETS (assuming it exists in constants)
                         elif constants.ROULETTE_CLEAR_BETS_BUTTON_RECT and constants.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
-                             # Look for ACTION_ROULETTE_CLEAR_BETS in constants.py - if it's not there, add it or handle differently
-                             # Assuming ACTION_ROULETTE_CLEAR_BETS exists:
-                             actions.append(('ROULETTE_CLEAR_BETS', None)) # Use the actual constant name
+                             actions.append((constants.ACTION_ROULETTE_CLEAR_BETS, None)) # Use the constant
                         elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
                              actions.append((constants.ACTION_RETURN_TO_MENU, None))
 
@@ -162,10 +160,8 @@ class InputHandler:
 
                 elif current_state == constants.STATE_ROULETTE_RESULT:
                      # Allow clearing bets or returning to menu after result
-                    # Check for ACTION_ROULETTE_CLEAR_BETS
                     if constants.ROULETTE_CLEAR_BETS_BUTTON_RECT and constants.ROULETTE_CLEAR_BETS_BUTTON_RECT.collidepoint(mouse_pos):
-                         # Assuming ACTION_ROULETTE_CLEAR_BETS exists:
-                         actions.append(('ROULETTE_CLEAR_BETS', None)) # Use the actual constant name
+                         actions.append((constants.ACTION_ROULETTE_CLEAR_BETS, None)) # Use the constant
                     elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
                          actions.append((constants.ACTION_RETURN_TO_MENU, None))
                     # Also allow placing new bets immediately (acts like clear + place)

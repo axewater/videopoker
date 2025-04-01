@@ -106,20 +106,20 @@ ROULETTE_CHIP_RADIUS = 10
 ROULETTE_CHIP_TEXT_COLOR = BLACK
 
 # Roulette Layout Constants
-ROULETTE_GRID_X_START = 100
-ROULETTE_GRID_Y_START = 150
-ROULETTE_NUM_BOX_WIDTH = 40
-ROULETTE_NUM_BOX_HEIGHT = 40
-ROULETTE_GRID_SPACING = 5
+ROULETTE_GRID_X_START = 50 # Adjusted for more space
+ROULETTE_GRID_Y_START = 100 # Adjusted for more space
+ROULETTE_NUM_BOX_WIDTH = 45 # Slightly wider boxes
+ROULETTE_NUM_BOX_HEIGHT = 45 # Slightly taller boxes
+ROULETTE_GRID_SPACING = 4
 ROULETTE_NUM_COLS = 12
 ROULETTE_NUM_ROWS = 3
 
 # --- Calculate Roulette Rects ---
 ROULETTE_NUMBER_RECTS = {}
-# Zero (spans top of grid, before 1, 2, 3)
+# Zero (Aligned with top of grid, spans 3 rows)
 zero_x = ROULETTE_GRID_X_START
-zero_y = ROULETTE_GRID_Y_START - ROULETTE_NUM_BOX_HEIGHT - ROULETTE_GRID_SPACING
-zero_width = ROULETTE_NUM_BOX_WIDTH
+zero_y = ROULETTE_GRID_Y_START # Align top with number grid
+zero_width = ROULETTE_NUM_BOX_WIDTH # Same width as number boxes
 zero_height = ROULETTE_NUM_BOX_HEIGHT * ROULETTE_NUM_ROWS + ROULETTE_GRID_SPACING * (ROULETTE_NUM_ROWS - 1)
 ROULETTE_NUMBER_RECTS[0] = pygame.Rect(zero_x, zero_y, zero_width, zero_height)
 
@@ -129,17 +129,14 @@ for col in range(ROULETTE_NUM_COLS):
     for row in range(ROULETTE_NUM_ROWS):
         # Numbers go 3, 2, 1 vertically in each column
         current_number = (col * ROULETTE_NUM_ROWS) + (ROULETTE_NUM_ROWS - row)
-        if current_number > 36: continue # Should not happen with 12 cols
+        if current_number > 36: continue
 
         rect_x = ROULETTE_GRID_X_START + zero_width + ROULETTE_GRID_SPACING + col * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING)
         rect_y = ROULETTE_GRID_Y_START + row * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING)
         ROULETTE_NUMBER_RECTS[current_number] = pygame.Rect(rect_x, rect_y, ROULETTE_NUM_BOX_WIDTH, ROULETTE_NUM_BOX_HEIGHT)
 
-# Outside Bets (Simplified Positions Below Grid)
-outside_bet_y = ROULETTE_GRID_Y_START + ROULETTE_NUM_ROWS * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING) + 10
-outside_bet_width = ROULETTE_NUM_BOX_WIDTH * 2 + ROULETTE_GRID_SPACING # Example width
-outside_bet_height = BUTTON_HEIGHT
-outside_bet_spacing = 20
+# Outside Bets
+outside_bet_height = BUTTON_HEIGHT # Standard height for outside bets
 
 # --- Outside Bet Rects ---
 # Dozen Bets (Below numbers, spanning 4 number boxes each)
@@ -149,24 +146,32 @@ ROULETTE_BET_DOZEN1_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[1].left, dozen_y, d
 ROULETTE_BET_DOZEN2_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[13].left, dozen_y, dozen_width, outside_bet_height)
 ROULETTE_BET_DOZEN3_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[25].left, dozen_y, dozen_width, outside_bet_height)
 
-# Column Bets (Right of numbers, spanning 3 number boxes vertically)
-col_width = outside_bet_height # Make them square-ish
-col_height = ROULETTE_NUM_ROWS * (ROULETTE_NUM_BOX_HEIGHT + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+# Column Bets (Right of numbers, spanning 1 number box vertically each)
+col_width = ROULETTE_NUM_BOX_WIDTH # Make width same as number box
+col_height = ROULETTE_NUM_BOX_HEIGHT # Height for one row
 col_x = ROULETTE_NUMBER_RECTS[36].right + ROULETTE_GRID_SPACING
-ROULETTE_BET_COL1_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[1].top, col_width, col_height) # Aligns with row 1 (numbers 1, 4, ...)
-ROULETTE_BET_COL2_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[2].top, col_width, col_height) # Aligns with row 2 (numbers 2, 5, ...)
-ROULETTE_BET_COL3_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[3].top, col_width, col_height) # Aligns with row 3 (numbers 3, 6, ...)
+# Align each column bet with its corresponding row
+ROULETTE_BET_COL1_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[3].top, col_width, col_height) # Aligns with row containing 3, 6, ... 36
+ROULETTE_BET_COL2_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[2].top, col_width, col_height) # Aligns with row containing 2, 5, ... 35
+ROULETTE_BET_COL3_RECT = pygame.Rect(col_x, ROULETTE_NUMBER_RECTS[1].top, col_width, col_height) # Aligns with row containing 1, 4, ... 34
 
 # Even Money Bets (Below Dozens, spanning 2 number boxes each)
 even_money_y = dozen_y + outside_bet_height + ROULETTE_GRID_SPACING
-even_money_width = 2 * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+# Total width of the number grid part (12 cols)
+total_number_grid_width = 12 * (ROULETTE_NUM_BOX_WIDTH + ROULETTE_GRID_SPACING) - ROULETTE_GRID_SPACING
+# Divide total width by 6 for the six even money bets
+even_money_width = total_number_grid_width // 6
 
-ROULETTE_BET_LOW_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[1].left, even_money_y, even_money_width, outside_bet_height)
-ROULETTE_BET_EVEN_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[5].left, even_money_y, even_money_width, outside_bet_height)
-ROULETTE_BET_RED_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[9].left, even_money_y, even_money_width, outside_bet_height)
-ROULETTE_BET_BLACK_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[13].left, even_money_y, even_money_width, outside_bet_height)
-ROULETTE_BET_ODD_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[17].left, even_money_y, even_money_width, outside_bet_height)
-ROULETTE_BET_HIGH_RECT = pygame.Rect(ROULETTE_NUMBER_RECTS[21].left, even_money_y, even_money_width, outside_bet_height)
+# Calculate starting x based on the first dozen bet's left edge
+even_money_x_start = ROULETTE_BET_DOZEN1_RECT.left
+
+ROULETTE_BET_LOW_RECT = pygame.Rect(even_money_x_start, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_EVEN_RECT = pygame.Rect(even_money_x_start + even_money_width, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_RED_RECT = pygame.Rect(even_money_x_start + 2 * even_money_width, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_BLACK_RECT = pygame.Rect(even_money_x_start + 3 * even_money_width, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_ODD_RECT = pygame.Rect(even_money_x_start + 4 * even_money_width, even_money_y, even_money_width, outside_bet_height)
+ROULETTE_BET_HIGH_RECT = pygame.Rect(even_money_x_start + 5 * even_money_width, even_money_y, even_money_width, outside_bet_height)
+
 
 # Spin Button Position (Example - Bottom Right)
 spin_button_x = SCREEN_WIDTH - BUTTON_WIDTH - 50
@@ -175,6 +180,13 @@ ROULETTE_SPIN_BUTTON_RECT = pygame.Rect(spin_button_x, spin_button_y, BUTTON_WID
 
 # Clear Bets Button
 ROULETTE_CLEAR_BETS_BUTTON_RECT = pygame.Rect(spin_button_x - BUTTON_WIDTH - 20, spin_button_y, BUTTON_WIDTH, BUTTON_HEIGHT)
+
+# Return to Menu Button (Moved up slightly to avoid overlap)
+RETURN_TO_MENU_BUTTON_RECT = pygame.Rect(
+    20, spin_button_y, # Align Y with Spin/Clear buttons
+    BUTTON_WIDTH + 30, # Slightly wider for text
+    BUTTON_HEIGHT
+)
 
 # Card Rectangles (calculated here for potential use in multiple modules)
 CARD_RECTS = []
@@ -292,12 +304,6 @@ QUIT_BUTTON_RECT = pygame.Rect(
     BUTTON_WIDTH,
     BUTTON_HEIGHT
 )
-# Return to Game Selection Button Rectangle (Position bottom-left)
-RETURN_TO_MENU_BUTTON_RECT = pygame.Rect(
-    20, SCREEN_HEIGHT - BUTTON_HEIGHT - 20, # Bottom-left
-    BUTTON_WIDTH + 30, # Slightly wider for text
-    BUTTON_HEIGHT
-)
 
 # Settings Menu Rectangles
 SETTINGS_BACK_BUTTON_RECT = pygame.Rect(
@@ -364,4 +370,4 @@ ACTION_BLACKJACK_STAND = "BLACKJACK_STAND"
 # Roulette Actions
 ACTION_ROULETTE_BET = "ROULETTE_BET" # Payload will be bet details dict
 ACTION_ROULETTE_SPIN = "ROULETTE_SPIN"
-
+ACTION_ROULETTE_CLEAR_BETS = "ROULETTE_CLEAR_BETS" # Added action constant
