@@ -41,7 +41,8 @@ def draw_game_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font]
     held_indices = render_data.get('held_indices', [])
 
     # Draw hand if it exists and we are in a game state (not menus)
-    if hand and current_state not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_CONFIRM_EXIT]:
+    # Also, don't draw the base hand/hold buttons when showing multi-poker results
+    if hand and current_state not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_CONFIRM_EXIT, constants.STATE_MULTI_POKER_SHOWING_RESULT]:
          draw_hand(surface, hand, held_indices, card_images, fonts)
 
     # Draw Multi Hands (if available and in multi-poker mode showing results)
