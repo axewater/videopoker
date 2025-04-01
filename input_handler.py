@@ -1,6 +1,6 @@
 # /input_handler.py
 import pygame
-from typing import List, Optional, Tuple, Dict, Any # Added Dict, Any
+from typing import List, Optional, Tuple, Dict, Any
 
 import constants
 
@@ -45,7 +45,7 @@ class InputHandler:
                         actions.append((constants.ACTION_CHOOSE_BLACKJACK, None))
                     elif constants.ROULETTE_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CHOOSE_ROULETTE, None))
-                    elif constants.SLOTS_BUTTON_RECT.collidepoint(mouse_pos): # Added check for Slots button
+                    elif constants.SLOTS_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CHOOSE_SLOTS, None))
                     elif constants.SETTINGS_BACK_BUTTON_RECT.collidepoint(mouse_pos): # Back button on game select
                         actions.append((constants.ACTION_RETURN_TO_TOP_MENU, None))
@@ -199,5 +199,19 @@ class InputHandler:
                                      clicked_on_bet_area = True
                                      break
 
+                # --- Slots Specific Input ---
+                # Check states where SPIN button is active
+                elif current_state == constants.STATE_SLOTS_IDLE or current_state == constants.STATE_SLOTS_SHOWING_RESULT:
+                    if constants.SLOTS_SPIN_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_SLOTS_SPIN, None))
+                    elif constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_RETURN_TO_MENU, None))
 
-        return actions
+                # Check state where SPIN button is inactive
+                elif current_state == constants.STATE_SLOTS_SPINNING:
+                    # Allow returning to menu (will trigger confirmation via process_input)
+                    if constants.RETURN_TO_MENU_BUTTON_RECT.collidepoint(mouse_pos):
+                        actions.append((constants.ACTION_RETURN_TO_MENU, None))
+
+
+        return actions # Return the list of processed actions

@@ -60,7 +60,10 @@ STATE_BLACKJACK_SHOWING_RESULT = "BLACKJACK_SHOWING_RESULT"
 STATE_ROULETTE_BETTING = "ROULETTE_BETTING"
 STATE_ROULETTE_SPINNING = "ROULETTE_SPINNING" # Includes pause phase now
 STATE_ROULETTE_RESULT = "ROULETTE_RESULT"
-STATE_SLOTS_IDLE = "SLOTS_IDLE" # Placeholder for slots
+# Slots States (Added)
+STATE_SLOTS_IDLE = "SLOTS_IDLE"
+STATE_SLOTS_SPINNING = "SLOTS_SPINNING"
+STATE_SLOTS_SHOWING_RESULT = "SLOTS_SHOWING_RESULT"
 
 # Font Sizes
 MONEY_FONT_SIZE = 30
@@ -81,6 +84,9 @@ ROULETTE_FLASH_INTERVAL = 10 # Frames for one flash state (on/off) - Total flash
 MONEY_ANIMATION_OFFSET_Y = 30 # Pixels below the main money display
 RESULT_FLASH_DURATION = 45 # Frames (e.g., 1.5 seconds at 30 FPS)
 RESULT_FLASH_INTERVAL = 5 # Frames between toggling visibility
+# Slots Animation Constants (Added)
+SLOTS_SPIN_DURATION = 90 # Frames (e.g., 3 seconds at 30 FPS)
+SLOTS_RESULT_PAUSE_DURATION = 60 # Frames (e.g., 2 seconds at 30 FPS)
 
 # Button Dimensions
 BUTTON_WIDTH = 150
@@ -88,6 +94,7 @@ BUTTON_HEIGHT = 50
 
 # Asset Paths
 CARD_ASSET_PATH = "assets/cards"
+SLOTS_ASSET_PATH = "assets/slots" # Added
 
 # Sound Asset Paths
 SOUND_ASSET_PATH = "assets/sounds"
@@ -311,7 +318,7 @@ RESTART_GAME_BUTTON_RECT = pygame.Rect(
     BUTTON_HEIGHT
 )
 
-# Quit Button Rectangle
+# Quit Button Rectangle (Not used on Top Menu, maybe elsewhere?)
 QUIT_BUTTON_RECT = pygame.Rect(
     SCREEN_WIDTH - BUTTON_WIDTH - 20,
     SCREEN_HEIGHT - BUTTON_HEIGHT - 20,
@@ -355,6 +362,17 @@ PLAY_AGAIN_BUTTON_RECT = pygame.Rect(
     BUTTON_HEIGHT
 )
 
+# --- Slots Constants (Added) ---
+NUM_REELS = 3 # From slots_rules.py
+SLOT_SYMBOL_WIDTH = 120 # From draw_slots_screen.py
+SLOT_SYMBOL_HEIGHT = 100 # From draw_slots_screen.py
+SLOTS_SPIN_BUTTON_RECT = pygame.Rect( # Positioned like Deal/Draw
+    SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+    SCREEN_HEIGHT - BUTTON_HEIGHT - 50, # Position near bottom center
+    BUTTON_WIDTH,
+    BUTTON_HEIGHT
+)
+
 # Input Actions (returned by InputHandler)
 ACTION_QUIT = "QUIT"
 ACTION_DEAL_DRAW = "DEAL_DRAW"
@@ -386,3 +404,5 @@ ACTION_BLACKJACK_STAND = "BLACKJACK_STAND"
 ACTION_ROULETTE_BET = "ROULETTE_BET" # Payload will be bet details dict
 ACTION_ROULETTE_SPIN = "ROULETTE_SPIN"
 ACTION_ROULETTE_CLEAR_BETS = "ROULETTE_CLEAR_BETS" # Added action constant
+# Slots Actions (Added)
+ACTION_SLOTS_SPIN = "SLOTS_SPIN"

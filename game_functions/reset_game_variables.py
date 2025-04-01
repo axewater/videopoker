@@ -32,6 +32,10 @@ def reset_game_variables() -> Dict[str, Any]:
         'winning_slot_flash_active': False, # Reset flash active flag
         'winning_slot_flash_count': 0, # Reset flash count
         'winning_slot_flash_visible': True, # Reset flash visibility
+        # Slots specific state reset
+        'slots_final_symbols': ["?", "?", "?"], # Use placeholders initially
+        'slots_spin_timer': 0,
+        'slots_result_pause_timer': 0,
         # Note: deck and current_state are typically handled by the calling function
         # Note: game_state_manager (money) is NOT reset here
     }

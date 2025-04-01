@@ -12,8 +12,8 @@ from .place_roulette_bet import place_roulette_bet
 from .process_multi_drawing import process_multi_drawing
 from .process_blackjack_action import process_blackjack_action
 from .reset_game_variables import reset_game_variables
-# Need determine_roulette_result for spin action completion, but spin starts here
-# Need calculate_roulette_winnings? No, that's after spin.
+from .process_slots_spin import process_slots_spin
+from .resolve_slots_round import resolve_slots_round
 
 def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any], screen: Optional[pygame.Surface] = None, fonts: Optional[Dict[str, pygame.font.Font]] = None) -> Dict[str, Any]:
     """
@@ -116,15 +116,19 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                 new_game_state['roulette_winning_number'] = None
                 new_game_state['roulette_total_bet'] = 0
 
-        elif action == constants.ACTION_CHOOSE_SLOTS: # Added handler for Slots
+        elif action == constants.ACTION_CHOOSE_SLOTS: # Modified handler for Slots
             if new_game_state['current_state'] == constants.STATE_GAME_SELECTION:
                 if sounds.get("button"): sounds["button"].play()
-                # For now, just show a message, don't change state or reset
-                new_game_state['message'] = "Slots game coming soon!"
-                # Or transition to a placeholder state if needed:
-                # reset_state = reset_game_variables()
-                # new_game_state.update(reset_state)
-                # new_game_state['current_state'] = constants.STATE_SLOTS_IDLE
+                # Transition to Slots IDLE state
+                reset_state = reset_game_variables()
+                new_game_state.update(reset_state)
+                new_game_state['current_state'] = constants.STATE_SLOTS_IDLE
+                new_game_state['message'] = "Click SPIN to play ($1)" # Initial Slots message
+                # Ensure slots specific state is clean/initialized if needed
+                new_game_state['slots_final_symbols'] = ["?", "?", "?"] # Reset display symbols
+                new_game_state['slots_reel_positions'] = [0, 0, 0]
+                new_game_state['slots_spin_timer'] = 0
+                new_game_state['slots_result_pause_timer'] = 0
 
 
         elif action == constants.ACTION_RESTART_GAME:
@@ -392,6 +396,14 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                           new_game_state['current_state'] = constants.STATE_ROULETTE_BETTING
                           new_game_state['roulette_winning_number'] = None # Clear winning number display
 
+        # --- Slots Actions ---
+        elif action == constants.ACTION_SLOTS_SPIN:
+            # Check if we are in a state where spinning is allowed
+            if new_game_state['current_state'] in [constants.STATE_SLOTS_IDLE, constants.STATE_SLOTS_SHOWING_RESULT]:
+                # Call the function to handle the spin action
+                spin_result_state = process_slots_spin(new_game_state, game_state_manager, sounds)
+                new_game_state.update(spin_result_state)
+                
     # --- End of action processing loop ---
 
     # Update the running state in the dictionary before returning

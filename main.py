@@ -24,6 +24,7 @@ from renderer_functions.draw_confirm_exit import draw_confirm_exit
 from renderer_functions.draw_blackjack_screen import draw_blackjack_screen
 from renderer_functions.draw_roulette_screen import draw_roulette_screen
 from renderer_functions.draw_spinning_wheel import draw_spinning_wheel
+from renderer_functions.draw_slots_screen import draw_slots_screen
 from renderer_functions.draw_text import draw_text
 
 # Game Logic Functions
@@ -35,6 +36,8 @@ from game_functions.reset_game_variables import reset_game_variables
 from game_functions.start_blackjack_round import start_blackjack_round
 from game_functions.process_blackjack_action import process_blackjack_action
 from game_functions.resolve_blackjack_round import resolve_blackjack_round
+from game_functions.process_slots_spin import process_slots_spin
+from game_functions.resolve_slots_round import resolve_slots_round
 from game_functions.place_roulette_bet import place_roulette_bet
 from game_functions.determine_roulette_result import determine_roulette_result
 from game_functions.calculate_roulette_winnings import calculate_roulette_winnings
@@ -77,8 +80,11 @@ def main():
         'game_over_large': get_font(64),
         'game_over_medium': get_font(32),
     }
-    # constants.GREY = (128, 128, 128) # Removed, added directly to constants.py
     card_images = load_card_images(constants.CARD_ASSET_PATH)
+    # Load Slot Images
+    from renderer_functions.load_slot_images import load_slot_images
+    slot_images = load_slot_images(constants.SLOTS_ASSET_PATH,
+                                   (constants.SLOT_SYMBOL_WIDTH, constants.SLOT_SYMBOL_HEIGHT))
 
     # --- Initialize Game State Variables ---
     sounds = load_sounds(initial_sound_enabled)
@@ -122,10 +128,15 @@ def main():
         'roulette_bets': {},
         'roulette_winning_number': None,
         'roulette_spin_timer': 0,
-        'roulette_pause_timer': 0, # Added for pause after spin
-        'winning_slot_flash_active': False, # Added for slot flashing
-        'winning_slot_flash_count': 0, # Added for slot flashing
-        'winning_slot_flash_visible': True, # Added for slot flashing
+        'roulette_pause_timer': 0,
+        'winning_slot_flash_active': False,
+        'winning_slot_flash_count': 0,
+        'winning_slot_flash_visible': True,
+        # --- Add Slots Specific State ---
+        'slots_final_symbols': ["?", "?", "?"],
+        'slots_reel_positions': [0, 0, 0],
+        'slots_spin_timer': 0,
+        'slots_result_pause_timer': 0,
     }
 
     # Apply initial volume
@@ -160,7 +171,7 @@ def main():
             game_state['volume_changed'] = False
 
         # 3. Update Game Logic (Timers, Game Over Checks) -> Update State
-        game_state = update_game(game_state, game_state_manager, sounds) # Pass sounds
+        game_state = update_game(game_state, game_state_manager, sounds)
 
         # 4. Render Output
         screen.fill(constants.DARK_GREEN)
@@ -194,6 +205,9 @@ def main():
         elif game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_SPINNING, constants.STATE_ROULETTE_RESULT]:
             # draw_roulette_screen handles drawing table OR wheel based on state
             draw_roulette_screen(screen, fonts, game_state, game_state_manager)
+        elif game_state['current_state'] in [constants.STATE_SLOTS_IDLE, constants.STATE_SLOTS_SPINNING, constants.STATE_SLOTS_SHOWING_RESULT]:
+            # Draw the slots screen
+            draw_slots_screen(screen, fonts, slot_images, game_state, game_state_manager)
         else:
             # Ensure render_data includes necessary items like money animation status
             render_data['money_animation_active'] = game_state.get('money_animation_active', False)

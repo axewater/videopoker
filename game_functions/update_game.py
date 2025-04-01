@@ -4,9 +4,9 @@ from typing import Dict, Any
 
 import constants
 from .determine_roulette_result import determine_roulette_result
+from .resolve_slots_round import resolve_slots_round
 from game_state import GameState
 
-# *** Add sounds parameter ***
 def update_game(current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any]) -> Dict[str, Any]:
     """
     Handles game logic updates per frame (timers, game over checks).
@@ -80,6 +80,25 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
                 new_state['winning_slot_flash_active'] = False
                 new_state['winning_slot_flash_visible'] = True
                 new_state['winning_slot_flash_count'] = 0
+
+    # Update Slots spin/pause logic
+    elif new_state['current_state'] == constants.STATE_SLOTS_SPINNING:
+        spin_timer = new_state.get('slots_spin_timer', 0)
+        spin_timer -= 1
+        new_state['slots_spin_timer'] = spin_timer
+        if spin_timer <= 0:
+            # Spin finished, resolve the round
+            resolve_state = resolve_slots_round(new_state, game_state_manager, sounds)
+            new_state.update(resolve_state)
+
+    elif new_state['current_state'] == constants.STATE_SLOTS_SHOWING_RESULT:
+        pause_timer = new_state.get('slots_result_pause_timer', 0)
+        pause_timer -= 1
+        new_state['slots_result_pause_timer'] = pause_timer
+        if pause_timer <= 0:
+            # Pause finished, return to idle state
+            new_state['current_state'] = constants.STATE_SLOTS_IDLE
+            new_state['message'] = "Click SPIN to play ($1)" # Reset message
 
     # Check for game over condition (logic remains the same)
     current_state_str = new_state['current_state']
