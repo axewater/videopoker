@@ -21,6 +21,7 @@ BLACK = (0, 0, 0)
 RED = (200, 0, 0)
 GREEN = (0, 150, 0)
 GOLD = (218, 165, 32)
+YELLOW = (255, 255, 0) # For highlighting
 DARK_GREEN = (0, 100, 0)
 BUTTON_OFF = (100, 100, 100)
 BUTTON_ON = (255, 215, 0) # Goldish color for held button
@@ -40,6 +41,10 @@ PAY_TABLE_FONT_SIZE = 20
 BUTTON_FONT_SIZE = 30
 RESULT_FONT_SIZE = 36
 HOLD_FONT_SIZE = 24
+
+# Animation Constants
+MONEY_ANIMATION_DURATION = 60 # Frames (e.g., 2 seconds at 30 FPS)
+MONEY_ANIMATION_OFFSET_Y = 30 # Pixels below the main money display
 
 # Button Dimensions
 BUTTON_WIDTH = 150

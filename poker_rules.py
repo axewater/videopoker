@@ -1,39 +1,42 @@
 from collections import Counter
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, NewType
 from card import Card, RANK_VALUES
+from enum import Enum, auto # Using Enum for better type safety and clarity
 
-# Define Hand Ranks (lower number is better)
-ROYAL_FLUSH = 1
-STRAIGHT_FLUSH = 2
-FOUR_OF_A_KIND = 3
-FULL_HOUSE = 4
-FLUSH = 5
-STRAIGHT = 6
-THREE_OF_A_KIND = 7
-TWO_PAIR = 8
-JACKS_OR_BETTER = 9
-NOTHING = 10 # Or any rank lower than the lowest paying hand
+# Define Hand Ranks using Enum
+class HandRank(Enum):
+    ROYAL_FLUSH = auto()
+    STRAIGHT_FLUSH = auto()
+    FOUR_OF_A_KIND = auto()
+    FULL_HOUSE = auto()
+    FLUSH = auto()
+    STRAIGHT = auto()
+    THREE_OF_A_KIND = auto()
+    TWO_PAIR = auto()
+    JACKS_OR_BETTER = auto()
+    NOTHING = auto() # Represents hands below Jacks or Better
+
 
 # Standard Jacks or Better Pay Table (Bet = 1 unit)
 # Maps Hand Rank constant to (Name, Payout Multiplier)
 PAY_TABLE = {
-    ROYAL_FLUSH: ("Royal Flush", 250), # Often higher with max bet, but simplifying
-    STRAIGHT_FLUSH: ("Straight Flush", 50),
-    FOUR_OF_A_KIND: ("Four of a Kind", 25),
-    FULL_HOUSE: ("Full House", 9),
-    FLUSH: ("Flush", 6),
-    STRAIGHT: ("Straight", 4),
-    THREE_OF_A_KIND: ("Three of a Kind", 3),
-    TWO_PAIR: ("Two Pair", 2),
-    JACKS_OR_BETTER: ("Jacks or Better", 1),
-    NOTHING: ("Nothing", 0)
+    HandRank.ROYAL_FLUSH: ("Royal Flush", 250), # Often higher with max bet, but simplifying
+    HandRank.STRAIGHT_FLUSH: ("Straight Flush", 50),
+    HandRank.FOUR_OF_A_KIND: ("Four of a Kind", 25),
+    HandRank.FULL_HOUSE: ("Full House", 9),
+    HandRank.FLUSH: ("Flush", 6),
+    HandRank.STRAIGHT: ("Straight", 4),
+    HandRank.THREE_OF_A_KIND: ("Three of a Kind", 3),
+    HandRank.TWO_PAIR: ("Two Pair", 2),
+    HandRank.JACKS_OR_BETTER: ("Jacks or Better", 1),
+    HandRank.NOTHING: ("Nothing", 0)
 }
 
 def get_pay_table_string() -> str:
     """Returns a formatted string representation of the pay table."""
     lines = ["--- Pay Table (Bet: 1) ---"]
     # Sort by payout for display (descending)
-    sorted_ranks = sorted(PAY_TABLE.keys(), key=lambda k: PAY_TABLE[k][1], reverse=True)
+    sorted_ranks = sorted([rank for rank in PAY_TABLE if PAY_TABLE[rank][1] > 0], key=lambda k: PAY_TABLE[k][1], reverse=True)
     for rank in sorted_ranks:
         name, payout = PAY_TABLE[rank]
         if payout > 0: # Only show winning hands
@@ -41,7 +44,7 @@ def get_pay_table_string() -> str:
     return "\n".join(lines)
 
 
-def evaluate_hand(hand: List[Card]) -> Tuple[int, str, int]:
+def evaluate_hand(hand: List[Card]) -> Tuple[HandRank, str, int]:
     """
     Evaluates a 5-card hand and returns its rank, name, and payout multiplier.
 
@@ -50,7 +53,7 @@ def evaluate_hand(hand: List[Card]) -> Tuple[int, str, int]:
 
     Returns:
         A tuple containing:
-        - The rank of the hand (e.g., ROYAL_FLUSH, FOUR_OF_A_KIND).
+        - The rank of the hand (HandRank enum member).
         - The name of the hand (e.g., "Royal Flush", "Four of a Kind").
         - The payout multiplier for that hand based on PAY_TABLE.
     """
@@ -79,45 +82,45 @@ def evaluate_hand(hand: List[Card]) -> Tuple[int, str, int]:
     # Royal Flush / Straight Flush
     if is_straight and is_flush:
         if ranks[0] == RANK_VALUES['A'] and ranks[1] == RANK_VALUES['K']: # Ace-high straight flush
-            rank = ROYAL_FLUSH
+            rank = HandRank.ROYAL_FLUSH
         else:
-            rank = STRAIGHT_FLUSH
+            rank = HandRank.STRAIGHT_FLUSH
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Four of a Kind
     if most_common_ranks[0][1] == 4:
-        rank = FOUR_OF_A_KIND
+        rank = HandRank.FOUR_OF_A_KIND
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Full House
     if most_common_ranks[0][1] == 3 and most_common_ranks[1][1] == 2:
-        rank = FULL_HOUSE
+        rank = HandRank.FULL_HOUSE
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Flush (but not Straight Flush)
     if is_flush:
-        rank = FLUSH
+        rank = HandRank.FLUSH
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Straight (but not Straight Flush)
     if is_straight:
-        rank = STRAIGHT
+        rank = HandRank.STRAIGHT
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Three of a Kind
     if most_common_ranks[0][1] == 3:
-        rank = THREE_OF_A_KIND
+        rank = HandRank.THREE_OF_A_KIND
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
     # Two Pair
     if most_common_ranks[0][1] == 2 and most_common_ranks[1][1] == 2:
-        rank = TWO_PAIR
+        rank = HandRank.TWO_PAIR
         name, payout = PAY_TABLE[rank]
         return rank, name, payout
 
@@ -126,12 +129,12 @@ def evaluate_hand(hand: List[Card]) -> Tuple[int, str, int]:
         pair_rank_value = most_common_ranks[0][0]
         # Check if the pair rank is Jack (11) or higher
         if pair_rank_value >= RANK_VALUES['J']:
-            rank = JACKS_OR_BETTER
+            rank = HandRank.JACKS_OR_BETTER
             name, payout = PAY_TABLE[rank]
             return rank, name, payout
 
     # Nothing
-    rank = NOTHING
+    rank = HandRank.NOTHING
     name, payout = PAY_TABLE[rank]
     return rank, name, payout
 

@@ -7,7 +7,7 @@ import constants
 from card import Card
 from deck import Deck
 from game_state import GameState
-from poker_rules import evaluate_hand
+from poker_rules import evaluate_hand, HandRank
 from renderer import Renderer
 from input_handler import InputHandler
 
@@ -51,7 +51,12 @@ class Game:
         self.held_indices: List[int] = []
         self.message = "Welcome! Click DEAL to start."
         self.result_message = ""
-        self.final_hand_rank_name = "" # Store the name of the final hand
+        self.final_hand_rank: Optional[HandRank] = None # Store the rank enum/constant of the final hand
+
+        # Money animation state
+        self.money_animation_active = False
+        self.money_animation_timer = 0
+        self.money_animation_amount = 0
 
         self.running = True
 
@@ -84,7 +89,7 @@ class Game:
             self.held_indices = []
             self.message = "Click HOLD buttons, then click DRAW"
             self.result_message = ""
-            self.final_hand_rank_name = ""
+            self.final_hand_rank = None
             self.current_state = constants.STATE_WAITING_FOR_HOLD
             self.sounds["deal"].play() # Play deal sound
         else:
@@ -138,13 +143,17 @@ class Game:
 
         # Evaluate the final hand
         rank, hand_name, payout = evaluate_hand(self.hand)
-        self.final_hand_rank_name = hand_name # Store for display
+        self.final_hand_rank = rank # Store the actual rank
 
         if payout > 0:
             winnings = payout * self.game_state_manager.cost_per_game
             self.result_message = f"WINNER! {hand_name}! +${winnings}"
             self.sounds["win"].play() # Play win sound
             self.game_state_manager.add_winnings(winnings)
+            # Trigger money animation
+            self.money_animation_active = True
+            self.money_animation_amount = winnings
+            self.money_animation_timer = constants.MONEY_ANIMATION_DURATION
         else:
             self.result_message = f"Result: {hand_name}. No win."
             self.sounds["lose"].play() # Play lose sound
@@ -192,13 +201,17 @@ class Game:
                      self.held_indices = []
                      self.message = "Welcome! Click DEAL to start."
                      self.result_message = ""
-                     self.final_hand_rank_name = ""
+                     self.final_hand_rank = None
                      self.current_state = constants.STATE_START_MENU
 
     def _update(self):
-        """Handles game logic updates (currently handled within _process_input)."""
-        # This method could be used for animations or time-based events later.
-        pass
+        """Handles game logic updates, like animations."""
+        # Update money animation timer
+        if self.money_animation_active:
+            self.money_animation_timer -= 1
+            if self.money_animation_timer <= 0:
+                self.money_animation_active = False
+                self.money_animation_amount = 0 # Reset amount
 
     def _render(self):
         """Draws the current game state to the screen."""
@@ -210,7 +223,10 @@ class Game:
             "message": self.message,
             "result_message": self.result_message,
             "current_state": self.current_state,
-            # Add final_hand_rank_name if needed for display by renderer
+            "winning_rank": self.final_hand_rank, # Pass the winning rank
+            # Pass animation state
+            "money_animation_active": self.money_animation_active,
+            "money_animation_amount": self.money_animation_amount,
         }
         self.renderer.draw_game_screen(game_data)
         pygame.display.flip() # Update the full screen

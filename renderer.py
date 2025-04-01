@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict, Optional
 
 import constants
 from card import Card
-from poker_rules import PAY_TABLE
+from poker_rules import PAY_TABLE, HandRank
 
 class Renderer:
     """Handles all drawing operations for the game."""
@@ -116,28 +116,57 @@ class Renderer:
             text_rect = hold_text_surface.get_rect(center=hold_rect.center)
             self.surface.blit(hold_text_surface, text_rect)
 
-    def draw_pay_table(self, x: int, y: int):
+    def draw_pay_table(self, x: int, y: int, winning_rank: Optional[HandRank] = None):
         """Draws the pay table."""
         pay_table_font = self.fonts['pay_table']
         line_height = pay_table_font.get_linesize()
+        padding = 5
+        highlight_color = constants.YELLOW
+        background_color = constants.BLACK # Or a dark semi-transparent color
+        text_color = constants.WHITE
+        title_color = constants.GOLD
 
         # Sort ranks by payout (highest first)
-        sorted_ranks = sorted(PAY_TABLE.keys(), key=lambda k: PAY_TABLE[k][1], reverse=True)
+        # Ensure PAY_TABLE keys are the HandRank enums/constants
+        sorted_ranks = sorted([rank for rank in PAY_TABLE if PAY_TABLE[rank][1] > 0],
+                              key=lambda k: PAY_TABLE[k][1], reverse=True)
 
-        # Draw title
-        title_font = self._get_font(constants.PAY_TABLE_FONT_SIZE + 2) # Slightly larger title
-        title_surface = title_font.render("--- Pay Table (Bet: 1) ---", True, constants.GOLD)
-        self.surface.blit(title_surface, (x, y))
-        y += line_height * 1.5 # Add some space after title
+        # Calculate dimensions needed for the background
+        max_width = 0
+        total_height = line_height * 1.5 # For title spacing
+        title_font = self._get_font(constants.PAY_TABLE_FONT_SIZE + 2)
+        title_text = "--- Pay Table (Bet: 1) ---"
+        title_surf = title_font.render(title_text, True, title_color)
+        max_width = title_surf.get_width()
 
-        # Draw each winning hand
+        temp_surfaces = []
         for rank in sorted_ranks:
             name, payout = PAY_TABLE[rank]
-            if payout > 0: # Only display winning hands
-                line = f"{name:<18}: {payout:>3}x" # Format for alignment
-                text_surface = pay_table_font.render(line, True, constants.WHITE)
-                self.surface.blit(text_surface, (x, y))
-                y += line_height # Move down for the next line
+            line = f"{name:<18}: {payout:>3}x"
+            line_surf = pay_table_font.render(line, True, text_color)
+            temp_surfaces.append((rank, line_surf)) # Store rank with surface
+            max_width = max(max_width, line_surf.get_width())
+            total_height += line_height
+
+        # Draw background rectangle
+        bg_rect = pygame.Rect(x - padding, y - padding, max_width + 2 * padding, total_height + 2 * padding)
+        # Optional: Make background semi-transparent
+        # bg_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+        # bg_surf.fill((*background_color, 180)) # Alpha value 0-255
+        # self.surface.blit(bg_surf, bg_rect.topleft)
+        pygame.draw.rect(self.surface, background_color, bg_rect, border_radius=5)
+
+        # Draw title
+        self.surface.blit(title_surf, (x, y))
+        current_y = y + line_height * 1.5 # Add space after title
+
+        # Draw each winning hand
+        for rank, text_surface in temp_surfaces:
+            if rank == winning_rank: # Check if this is the winning hand
+                highlight_rect = pygame.Rect(x - padding // 2, current_y - padding // 2, max_width + padding, line_height + padding // 2)
+                pygame.draw.rect(self.surface, highlight_color, highlight_rect, width=2, border_radius=3) # Draw border
+            self.surface.blit(text_surface, (x, current_y))
+            current_y += line_height # Move down for the next line
 
     def draw_button(self, text: str, rect: pygame.Rect, color: Tuple[int, int, int], text_color: Tuple[int, int, int]):
         """Draws a button with text."""
@@ -148,11 +177,20 @@ class Renderer:
         """Draws the entire game screen based on the provided game data."""
         self.surface.fill(constants.DARK_GREEN)
 
+        winning_rank = game_data.get('winning_rank')
+
         # Draw Pay Table
-        self.draw_pay_table(x=20, y=20)
+        self.draw_pay_table(x=20, y=20, winning_rank=winning_rank)
 
         # Draw Money
         money_text = f"Money: ${game_data.get('money', 0)}"
+        # Draw money animation if active
+        if game_data.get('money_animation_active', False):
+            amount = game_data.get('money_animation_amount', 0)
+            anim_text = f"+${amount}"
+            # Position slightly below the main money text
+            self.draw_text(anim_text, 'money', constants.SCREEN_WIDTH - 150, 20 + constants.MONEY_ANIMATION_OFFSET_Y, constants.YELLOW)
+
         self.draw_text(money_text, 'money', constants.SCREEN_WIDTH - 150, 20, constants.GOLD)
 
         # Draw Hand (if available)
