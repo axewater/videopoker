@@ -1,3 +1,4 @@
+# /renderer_functions/draw_slots_screen.py
 import pygame
 import random
 from typing import Dict, List, Optional, Any
@@ -18,8 +19,8 @@ VISIBLE_ROWS = 3 # How many symbols are visible vertically per reel
 PAYLINE_Y_OFFSET = (VISIBLE_ROWS // 2) * SLOT_SYMBOL_HEIGHT # Offset to draw the central payline symbol
 
 # --- Paytable Display Constants ---
-PAYTABLE_X = 50
-PAYTABLE_Y = 350
+PAYTABLE_X = 20  # Adjusted X position further left
+PAYTABLE_Y = 20  # Adjusted Y position further up
 PAYTABLE_LINE_HEIGHT = 25
 PAYTABLE_COL_WIDTH = 150
 
@@ -192,3 +193,4 @@ def draw_slots_screen(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font
         final_money = game_state_manager.money
         draw_text(surface, f"Final Money: ${final_money}", fonts['game_over_medium'], constants.SCREEN_WIDTH // 2, constants.SCREEN_HEIGHT // 2, constants.WHITE, center=True)
         draw_button(surface, fonts, "Play Again", constants.PLAY_AGAIN_BUTTON_RECT, constants.GREEN, constants.WHITE)
+
