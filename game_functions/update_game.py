@@ -1,10 +1,13 @@
+# /game_functions/update_game.py
+
 from typing import Dict, Any
 
 import constants
 from .determine_roulette_result import determine_roulette_result
 from game_state import GameState
 
-def update_game(current_game_state: Dict[str, Any], game_state_manager: GameState) -> Dict[str, Any]:
+# *** Add sounds parameter ***
+def update_game(current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any]) -> Dict[str, Any]:
     """
     Handles game logic updates per frame (timers, game over checks).
     Returns a dictionary containing the potentially modified game state variables.
@@ -42,25 +45,31 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
         spin_timer -= 1
         if spin_timer <= 0:
             # Spin finished, determine result and change state
-            result_state = determine_roulette_result(new_state, game_state_manager, current_game_state.get('sounds', {})) # Pass sounds dict
+            # *** Pass sounds dictionary to determine_roulette_result ***
+            result_state = determine_roulette_result(new_state, game_state_manager, sounds)
             new_state.update(result_state)
             new_state['roulette_spin_timer'] = 0 # Reset timer
         else:
             new_state['roulette_spin_timer'] = spin_timer
 
-    # Check for game over condition if not already in game over state or main menu
+    # Check for game over condition (logic remains the same)
+    # ... (game over check as before) ...
     current_state_str = new_state['current_state']
-    if current_state_str not in [constants.STATE_TOP_MENU, constants.STATE_GAME_SELECTION, constants.STATE_SETTINGS, constants.STATE_GAME_OVER, constants.STATE_CONFIRM_EXIT, constants.STATE_DRAW_POKER_IDLE, constants.STATE_MULTI_POKER_IDLE]:
-         # Determine cost for the *next* game based on the current mode
-         is_multi = current_state_str in [constants.STATE_MULTI_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_SHOWING_RESULT, constants.STATE_MULTI_POKER_IDLE]
-         cost_next_game = constants.NUM_MULTI_HANDS if is_multi else 1
-
-         # Transition to GAME_OVER if player cannot afford the next game *after* showing results
-         if current_state_str in [constants.STATE_DRAW_POKER_SHOWING_RESULT, constants.STATE_MULTI_POKER_SHOWING_RESULT]:
-             if game_state_manager.money < cost_next_game:
-                 # Don't overwrite existing result message if game just ended
-                 if not new_state.get('message', '').startswith("GAME OVER"):
-                      new_state['message'] = "GAME OVER! Not enough money."
+    # Simplified check: Is the player in a state where they might need to start a new paid round?
+    needs_money_check_states = [
+        constants.STATE_DRAW_POKER_SHOWING_RESULT,
+        constants.STATE_MULTI_POKER_SHOWING_RESULT,
+        constants.STATE_BLACKJACK_SHOWING_RESULT,
+        # Roulette doesn't automatically start a new round, so GAME OVER isn't triggered this way
+    ]
+    if current_state_str in needs_money_check_states:
+        is_multi = current_state_str == constants.STATE_MULTI_POKER_SHOWING_RESULT
+        cost_next_game = constants.NUM_MULTI_HANDS if is_multi else 1
+        if not game_state_manager.can_afford_bet(cost_next_game):
+            # Check if already game over to prevent message spam
+            if new_state['current_state'] != constants.STATE_GAME_OVER:
+                 new_state['message'] = f"GAME OVER! Need ${cost_next_game} for next round."
                  new_state['current_state'] = constants.STATE_GAME_OVER
+
 
     return new_state

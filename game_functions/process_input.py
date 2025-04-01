@@ -1,6 +1,6 @@
 # /game_functions/process_input.py
 from typing import List, Tuple, Optional, Dict, Any
-import pygame
+import pygame, random
 
 import constants
 from game_state import GameState
@@ -331,9 +331,9 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                  if new_game_state['current_state'] == constants.STATE_ROULETTE_RESULT:
                      new_game_state['roulette_bets'] = {}
                      new_game_state['roulette_winning_number'] = None
-                     new_game_state['result_message'] = ""
-                     new_game_state['message'] = "Place your bets!"
-                     new_game_state['current_state'] = constants.STATE_ROULETTE_BETTING # Change state back
+                     new_state['result_message'] = "" # Use new_state here
+                     new_state['message'] = "Place your bets!"
+                     new_state['current_state'] = constants.STATE_ROULETTE_BETTING # Change state back
                      game_state_manager.reset_round_bet() # Reset internal tracker for new round
 
                  bet_result_state = place_roulette_bet(payload, new_game_state, game_state_manager, sounds)
@@ -348,10 +348,14 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                  elif game_state_manager.can_afford_bet(total_bet):
                      if game_state_manager.deduct_bet(total_bet): # Deduct the total bet amount
                          if sounds.get("deal"): sounds["deal"].play() # Sound for spin start
+
+                         # *** Determine winning number HERE, before animation starts ***
+                         winning_number = random.choice(constants.ROULETTE_WHEEL_NUMBERS)
+                         new_game_state['roulette_winning_number'] = winning_number
+
+                         # Set state and timer for animation
                          new_game_state['current_state'] = constants.STATE_ROULETTE_SPINNING
                          new_game_state['roulette_spin_timer'] = constants.ROULETTE_SPIN_DURATION
-                         # *** CORRECTED LINE BELOW ***
-                         new_game_state['roulette_winning_number'] = None # Ensure no winning number displayed during spin
                          new_game_state['message'] = "Spinning..."
                          new_game_state['result_message'] = "" # Clear previous result
                      else:
@@ -362,7 +366,7 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                      new_game_state['message'] = f"Not enough money! Need ${total_bet} to spin."
                      if sounds.get("lose"): sounds["lose"].play()
 
-        elif action == 'ROULETTE_CLEAR_BETS': # Use the actual constant name if defined, or string directly
+        elif action == constants.ACTION_ROULETTE_CLEAR_BETS: # Check constant name
              # Allow clearing in BETTING or RESULT state
              if new_game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_RESULT]:
                  if new_game_state.get('roulette_bets'): # Only clear if bets exist
@@ -376,7 +380,6 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
                      if new_game_state['current_state'] == constants.STATE_ROULETTE_RESULT:
                           new_game_state['current_state'] = constants.STATE_ROULETTE_BETTING
                           new_game_state['roulette_winning_number'] = None # Clear winning number display
-
 
     # --- End of action processing loop ---
 

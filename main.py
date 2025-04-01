@@ -22,6 +22,7 @@ from renderer_functions.draw_settings_menu import draw_settings_menu
 from renderer_functions.draw_confirm_exit import draw_confirm_exit
 from renderer_functions.draw_blackjack_screen import draw_blackjack_screen
 from renderer_functions.draw_roulette_screen import draw_roulette_screen
+from renderer_functions.draw_spinning_wheel import draw_spinning_wheel
 from renderer_functions.draw_text import draw_text
 
 # Game Logic Functions
@@ -75,6 +76,7 @@ def main():
         'game_over_large': get_font(64),
         'game_over_medium': get_font(32),
     }
+    constants.GREY = (128, 128, 128) # Add this if needed by wheel drawing
     card_images = load_card_images(constants.CARD_ASSET_PATH)
 
     # --- Initialize Game State Variables ---
@@ -153,7 +155,7 @@ def main():
             game_state['volume_changed'] = False
 
         # 3. Update Game Logic (Timers, Game Over Checks) -> Update State
-        game_state = update_game(game_state, game_state_manager)
+        game_state = update_game(game_state, game_state_manager, sounds) # Pass sounds
 
         # 4. Render Output
         screen.fill(constants.DARK_GREEN)
@@ -185,9 +187,17 @@ def main():
                                              constants.STATE_BLACKJACK_DEALER_TURN, constants.STATE_BLACKJACK_SHOWING_RESULT]:
             draw_blackjack_screen(screen, fonts, card_images, game_state, game_state_manager)
         elif game_state['current_state'] in [constants.STATE_ROULETTE_BETTING, constants.STATE_ROULETTE_SPINNING, constants.STATE_ROULETTE_RESULT]:
+            # draw_roulette_screen now handles drawing the table OR the spinning wheel based on the state
             draw_roulette_screen(screen, fonts, game_state, game_state_manager)
         else:
+            # Ensure render_data includes necessary items like money animation status
+            render_data['money_animation_active'] = game_state.get('money_animation_active', False)
+            render_data['money_animation_amount'] = game_state.get('money_animation_amount', 0)
+            render_data['result_message_flash_active'] = game_state.get('result_message_flash_active', False)
+            render_data['result_message_flash_visible'] = game_state.get('result_message_flash_visible', True)
+
             draw_game_screen(screen, fonts, card_images, render_data, game_state)
+
 
         pygame.display.flip()
 
