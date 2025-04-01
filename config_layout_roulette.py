@@ -7,6 +7,7 @@ Imports other config modules for dependencies.
 import pygame
 import config_display as display
 import config_layout_general as layout_general
+from typing import Dict, Any
 
 # Roulette Constants (Initial Setup)
 ROULETTE_WHEEL_NUMBERS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26]
@@ -82,6 +83,22 @@ ROULETTE_BET_BLACK_RECT = pygame.Rect(even_money_x_start + 3 * even_money_width,
 ROULETTE_BET_ODD_RECT = pygame.Rect(even_money_x_start + 4 * even_money_width, even_money_y, even_money_width, outside_bet_height)
 ROULETTE_BET_HIGH_RECT = pygame.Rect(even_money_x_start + 5 * even_money_width, even_money_y, even_money_width, outside_bet_height)
 
+# --- Outside Bet Definitions (for input handling) ---
+# Dictionary mapping bet keys to their properties (rect, type, value)
+ROULETTE_OUTSIDE_BET_DEFINITIONS: Dict[str, Dict[str, Any]] = {
+    'dozen_1': {'rect': ROULETTE_BET_DOZEN1_RECT, 'type': 'dozen', 'value': '1'},
+    'dozen_2': {'rect': ROULETTE_BET_DOZEN2_RECT, 'type': 'dozen', 'value': '2'},
+    'dozen_3': {'rect': ROULETTE_BET_DOZEN3_RECT, 'type': 'dozen', 'value': '3'},
+    'column_1': {'rect': ROULETTE_BET_COL1_RECT, 'type': 'column', 'value': '1'},
+    'column_2': {'rect': ROULETTE_BET_COL2_RECT, 'type': 'column', 'value': '2'},
+    'column_3': {'rect': ROULETTE_BET_COL3_RECT, 'type': 'column', 'value': '3'},
+    'half_low': {'rect': ROULETTE_BET_LOW_RECT, 'type': 'half', 'value': 'low'},
+    'parity_even': {'rect': ROULETTE_BET_EVEN_RECT, 'type': 'parity', 'value': 'even'},
+    'color_red': {'rect': ROULETTE_BET_RED_RECT, 'type': 'color', 'value': 'red'},
+    'color_black': {'rect': ROULETTE_BET_BLACK_RECT, 'type': 'color', 'value': 'black'},
+    'parity_odd': {'rect': ROULETTE_BET_ODD_RECT, 'type': 'parity', 'value': 'odd'},
+    'half_high': {'rect': ROULETTE_BET_HIGH_RECT, 'type': 'half', 'value': 'high'},
+}
 
 # Spin Button Position (Example - Bottom Right)
 spin_button_x = display.SCREEN_WIDTH - layout_general.BUTTON_WIDTH - 50
