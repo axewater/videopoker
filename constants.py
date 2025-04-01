@@ -48,6 +48,13 @@ BUTTON_HEIGHT = 50
 # Asset Paths
 CARD_ASSET_PATH = "assets/cards"
 
+# Sound Asset Paths
+SOUND_ASSET_PATH = "assets/sounds"
+SOUND_FILES = {
+    "deal": "deal.mp3", "draw": "draw.mp3", "hold": "hold.mp3",
+    "win": "win.mp3", "lose": "lose.mp3", "button": "button.mp3"
+}
+
 # Card Rectangles (calculated here for potential use in multiple modules)
 CARD_RECTS = []
 for i in range(5):

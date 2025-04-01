@@ -1,6 +1,7 @@
 import pygame
 import sys
 from typing import List, Tuple, Optional
+import os # Needed for joining sound paths
 
 import constants
 from card import Card
@@ -10,14 +11,26 @@ from poker_rules import evaluate_hand
 from renderer import Renderer
 from input_handler import InputHandler
 
+# Dummy Sound class for when sound system fails or is disabled
+class DummySound:
+    def play(self): pass
+
+
 class Game:
     """Manages the main game loop and coordinates components."""
 
     def __init__(self):
         """Initializes Pygame, game components, and game state."""
         pygame.init()
-        # Consider adding error handling for pygame initialization if needed
-        # pygame.mixer.init() # Uncomment if adding sounds
+        try:
+            pygame.mixer.init()
+            self.sound_enabled = True
+            print("Sound system initialized.")
+        except pygame.error as e:
+            print(f"Warning: Failed to initialize sound system: {e}")
+            print("Game will run without sound.")
+            self.sound_enabled = False
+            # Set dummy sound objects later to avoid errors on play() calls
 
         self.screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
         pygame.display.set_caption("Video Poker")
@@ -29,6 +42,9 @@ class Game:
         self.game_state_manager = GameState(starting_money=10)
         self.deck = Deck()
 
+        # Load sounds
+        self._load_sounds()
+
         # Game State Variables
         self.current_state = constants.STATE_START_MENU
         self.hand: List[Card] = []
@@ -38,6 +54,27 @@ class Game:
         self.final_hand_rank_name = "" # Store the name of the final hand
 
         self.running = True
+
+    def _load_sounds(self):
+        """Loads sound effects from files."""
+        self.sounds = {}
+        # Ensure all expected sound keys exist, even if sound is disabled or files are missing
+        if not self.sound_enabled:
+            for name in constants.SOUND_FILES.keys():
+                self.sounds[name] = DummySound()
+            print("Sound disabled. Using dummy sound objects.")
+            return
+
+        for name, filename in constants.SOUND_FILES.items():
+            path = os.path.join(constants.SOUND_ASSET_PATH, filename)
+            try:
+                sound = pygame.mixer.Sound(path)
+                self.sounds[name] = sound
+                print(f"Loaded sound: {name} ({filename})")
+            except pygame.error as e:
+                print(f"Warning: Could not load sound '{filename}': {e}")
+                # Assign a dummy sound object for this specific sound
+                self.sounds[name] = DummySound()
 
     def _start_new_round(self):
         """Resets variables for a new round of play."""
@@ -49,6 +86,7 @@ class Game:
             self.result_message = ""
             self.final_hand_rank_name = ""
             self.current_state = constants.STATE_WAITING_FOR_HOLD
+            self.sounds["deal"].play() # Play deal sound
         else:
             self.message = "GAME OVER! Not enough money."
             self.result_message = ""
@@ -105,12 +143,13 @@ class Game:
         if payout > 0:
             winnings = payout * self.game_state_manager.cost_per_game
             self.result_message = f"WINNER! {hand_name}! +${winnings}"
+            self.sounds["win"].play() # Play win sound
             self.game_state_manager.add_winnings(winnings)
-            # Play win sound (optional)
         else:
             self.result_message = f"Result: {hand_name}. No win."
-            # Play lose sound (optional)
+            self.sounds["lose"].play() # Play lose sound
 
+        self.sounds["draw"].play() # Play draw sound (after cards are replaced)
         self.message = "" # Clear the action message
         self.current_state = constants.STATE_SHOWING_RESULT
 
@@ -119,15 +158,18 @@ class Game:
         for action, payload in actions:
             if action == constants.ACTION_QUIT:
                 self.running = False
+                self.sounds["button"].play() # Optional: sound on quit
                 break # Exit loop immediately on quit
 
             elif action == constants.ACTION_DEAL_DRAW:
+                self.sounds["button"].play()
                 if self.current_state == constants.STATE_START_MENU:
                     self._start_new_round()
                 elif self.current_state == constants.STATE_WAITING_FOR_HOLD:
                     self._process_drawing()
                 elif self.current_state == constants.STATE_SHOWING_RESULT:
                     self._start_new_round() # Start next game if possible
+                    # Deal sound is played inside _start_new_round
 
             elif action == constants.ACTION_HOLD_TOGGLE:
                 if self.current_state == constants.STATE_WAITING_FOR_HOLD:
@@ -135,14 +177,15 @@ class Game:
                     if index is not None:
                         if index in self.held_indices:
                             self.held_indices.remove(index)
-                            # Play un-hold sound (optional)
+                            self.sounds["hold"].play() # Play un-hold sound (same sound for hold/unhold)
                         else:
                             self.held_indices.append(index)
                             self.held_indices.sort() # Keep sorted for consistency
-                            # Play hold sound (optional)
+                            self.sounds["hold"].play() # Play hold sound
 
             elif action == constants.ACTION_PLAY_AGAIN:
                  if self.current_state == constants.STATE_GAME_OVER:
+                     self.sounds["button"].play()
                      # Reset game state completely
                      self.game_state_manager = GameState(starting_money=10) # Or original starting money
                      self.hand = []
