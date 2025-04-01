@@ -1,27 +1,20 @@
 # /game_functions/process_input.py
 from typing import List, Tuple, Optional, Dict, Any
-import pygame, random
+import pygame # Keep pygame for type hints if needed
 
 # --- Config Imports ---
 import config_states as states
 import config_actions as actions_cfg
-import config_animations as anim
-import config_layout_cards as layout_cards # Contains NUM_MULTI_HANDS
-import config_layout_roulette as layout_roulette # Contains wheel numbers etc.
 
 # --- Local Imports ---
 from game_state import GameState
-from .start_draw_poker_round import start_draw_poker_round
-from .start_multi_poker_round import start_multi_poker_round
-from .start_blackjack_round import start_blackjack_round
-from .process_drawing import process_drawing
-from .place_roulette_bet import place_roulette_bet
-from .process_multi_drawing import process_multi_drawing
-from .process_blackjack_action import process_blackjack_action
-from .reset_game_variables import reset_game_variables
-from .process_slots_spin import process_slots_spin
-# Resolve slots round is not directly called by process_input, but by update_game
-# from .resolve_slots_round import resolve_slots_round
+# --- Import New Handlers ---
+from .handle_menu_input import handle_menu_action
+from .handle_poker_input import handle_poker_action
+from .handle_blackjack_input import handle_blackjack_action
+from .handle_roulette_input import handle_roulette_action
+from .handle_slots_input import handle_slots_action
+from .handle_confirmation_input import handle_confirmation_action
 
 def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: Dict[str, Any], game_state_manager: GameState, sounds: Dict[str, Any], screen: Optional[pygame.Surface] = None, fonts: Optional[Dict[str, pygame.font.Font]] = None) -> Dict[str, Any]:
     """
@@ -30,391 +23,53 @@ def process_input(actions: List[Tuple[str, Optional[any]]], current_game_state: 
     """
     # Start with the current state, modify it based on actions
     new_game_state = current_game_state.copy()
-    running = new_game_state.get('running', True) # Get running state
 
     for action, payload in actions:
-        if action == actions_cfg.ACTION_QUIT:
-            if sounds.get("button"): sounds["button"].play() # Optional: sound on quit
-            # Trigger confirmation dialog instead of quitting directly
-            new_game_state['confirm_action_type'] = 'QUIT'
-            new_game_state['previous_state_before_confirm'] = new_game_state['current_state'] # Store current state
-            new_game_state['current_state'] = states.STATE_CONFIRM_EXIT
-            # Note: We don't set running = False here anymore, it's handled by CONFIRM_YES
-            # break # Don't break, let other actions process if needed, though unlikely after quit click
+        current_state_str = new_game_state['current_state']
 
-        # --- Top Menu Actions ---
-        elif action == actions_cfg.ACTION_GOTO_PLAY:
-            if new_game_state['current_state'] == states.STATE_TOP_MENU:
-                if sounds.get("button"): sounds["button"].play()
-                new_game_state['current_state'] = states.STATE_GAME_SELECTION
+        # --- Dispatch to the appropriate handler based on current state ---
 
-        elif action == actions_cfg.ACTION_GOTO_SETTINGS:
-            if new_game_state['current_state'] == states.STATE_TOP_MENU:
-                if sounds.get("button"): sounds["button"].play()
-                new_game_state['current_state'] = states.STATE_SETTINGS
+        # Menu States (Top, Game Select, Settings, Game Over)
+        if current_state_str in [states.STATE_TOP_MENU, states.STATE_GAME_SELECTION, states.STATE_SETTINGS, states.STATE_GAME_OVER]:
+            new_game_state = handle_menu_action(action, payload, new_game_state, game_state_manager, sounds)
 
-        # --- Settings Actions ---
-        elif action == actions_cfg.ACTION_TOGGLE_SOUND:
-            if new_game_state['current_state'] == states.STATE_SETTINGS:
-                new_game_state['sound_enabled'] = not new_game_state['sound_enabled']
-                new_game_state['sound_setting_changed'] = True # Flag to reload sounds in main loop
-                # Play button sound *after* potentially enabling sound
-                if new_game_state['sound_enabled'] and sounds.get("button"): sounds["button"].play()
+        # Poker States
+        elif current_state_str in [states.STATE_DRAW_POKER_IDLE, states.STATE_DRAW_POKER_WAITING_FOR_HOLD, states.STATE_DRAW_POKER_SHOWING_RESULT,
+                                   states.STATE_MULTI_POKER_IDLE, states.STATE_MULTI_POKER_WAITING_FOR_HOLD, states.STATE_MULTI_POKER_SHOWING_RESULT]:
+            new_game_state = handle_poker_action(action, payload, new_game_state, game_state_manager, sounds)
 
-        elif action == actions_cfg.ACTION_VOLUME_DOWN:
-             if new_game_state['current_state'] == states.STATE_SETTINGS and new_game_state['sound_enabled']:
-                 current_volume = new_game_state.get('volume_level', 0.7)
-                 new_volume = max(0.0, current_volume - 0.1) # Decrease by 10%, min 0
-                 new_game_state['volume_level'] = round(new_volume, 2) # Round to avoid float issues
-                 new_game_state['volume_changed'] = True # Flag to apply volume in main loop
+        # Blackjack States
+        elif current_state_str in [states.STATE_BLACKJACK_IDLE, states.STATE_BLACKJACK_PLAYER_TURN, states.STATE_BLACKJACK_SHOWING_RESULT]:
+             # Note: STATE_BLACKJACK_DEALER_TURN doesn't typically handle direct player input
+            new_game_state = handle_blackjack_action(action, payload, new_game_state, game_state_manager, sounds)
+
+        # Roulette States
+        elif current_state_str in [states.STATE_ROULETTE_BETTING, states.STATE_ROULETTE_SPINNING, states.STATE_ROULETTE_RESULT]:
+            new_game_state = handle_roulette_action(action, payload, new_game_state, game_state_manager, sounds)
+
+        # Slots States
+        elif current_state_str in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SPINNING, states.STATE_SLOTS_SHOWING_RESULT]:
+            new_game_state = handle_slots_action(action, payload, new_game_state, game_state_manager, sounds)
+
+        # Confirmation State
+        elif current_state_str == states.STATE_CONFIRM_EXIT:
+            new_game_state = handle_confirmation_action(action, payload, new_game_state, game_state_manager, sounds)
+
+        # Handle global quit action if not handled by specific state handlers (e.g., top menu quit)
+        # Note: Quit action now triggers confirmation, handled by handle_confirmation_action
+        elif action == actions_cfg.ACTION_QUIT:
+             # If quit is pressed outside of a state that handles it (like Top Menu), trigger confirmation
+             if current_state_str not in [states.STATE_TOP_MENU, states.STATE_CONFIRM_EXIT]: # Avoid double confirmation
                  if sounds.get("button"): sounds["button"].play()
+                 new_game_state['confirm_action_type'] = 'QUIT'
+                 new_game_state['previous_state_before_confirm'] = current_state_str
+                 new_game_state['current_state'] = states.STATE_CONFIRM_EXIT
 
-        elif action == actions_cfg.ACTION_VOLUME_UP:
-             if new_game_state['current_state'] == states.STATE_SETTINGS and new_game_state['sound_enabled']:
-                 current_volume = new_game_state.get('volume_level', 0.7)
-                 new_volume = min(1.0, current_volume + 0.1) # Increase by 10%, max 1
-                 new_game_state['volume_level'] = round(new_volume, 2) # Round to avoid float issues
-                 new_game_state['volume_changed'] = True # Flag to apply volume in main loop
-                 if sounds.get("button"): sounds["button"].play()
-
-
-        elif action == actions_cfg.ACTION_RETURN_TO_TOP_MENU: # From Settings or Game Selection
-            if new_game_state['current_state'] in [states.STATE_SETTINGS, states.STATE_GAME_SELECTION]:
-                if sounds.get("button"): sounds["button"].play()
-                new_game_state['current_state'] = states.STATE_TOP_MENU
-
-        # --- Game Selection Actions ---
-        elif action == actions_cfg.ACTION_CHOOSE_DRAW_POKER:
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                # Transition to IDLE state, don't start round yet
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                new_game_state['current_state'] = states.STATE_DRAW_POKER_IDLE
-                new_game_state['message'] = "Click DEAL to start ($1)"
-
-        elif action == actions_cfg.ACTION_CHOOSE_MULTI_POKER:
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                # Transition to IDLE state
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                new_game_state['current_state'] = states.STATE_MULTI_POKER_IDLE
-                new_game_state['message'] = f"Click DEAL to start (${layout_cards.NUM_MULTI_HANDS})" # Use config
-
-        elif action == actions_cfg.ACTION_CHOOSE_BLACKJACK:
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                # Transition to Blackjack IDLE state
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                new_game_state['current_state'] = states.STATE_BLACKJACK_IDLE
-                new_game_state['message'] = "Click DEAL to play Blackjack ($1)"
-                new_game_state['player_hand'] = [] # Ensure blackjack state is clean
-                new_game_state['dealer_hand'] = []
-
-        elif action == actions_cfg.ACTION_CHOOSE_ROULETTE:
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                new_game_state['current_state'] = states.STATE_ROULETTE_BETTING
-                new_game_state['message'] = "Place your bets!" # Initial Roulette message
-                new_game_state['roulette_bets'] = {}
-                new_game_state['roulette_winning_number'] = None
-                new_game_state['roulette_total_bet'] = 0
-
-        elif action == actions_cfg.ACTION_CHOOSE_SLOTS: # Modified handler for Slots
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                # Transition to Slots IDLE state
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                new_game_state['current_state'] = states.STATE_SLOTS_IDLE
-                new_game_state['message'] = "Click SPIN to play ($1)" # Initial Slots message
-                # Ensure slots specific state is clean/initialized if needed
-                new_game_state['slots_final_symbols'] = ["?", "?", "?"] # Reset display symbols
-                new_game_state['slots_reel_positions'] = [0, 0, 0]
-                new_game_state['slots_spin_timer'] = 0
-                new_game_state['slots_result_pause_timer'] = 0
-
-
-        elif action == actions_cfg.ACTION_RESTART_GAME:
-            if new_game_state['current_state'] == states.STATE_GAME_SELECTION:
-                if sounds.get("button"): sounds["button"].play()
-                # Trigger confirmation dialog specifically for restart
-                new_game_state['confirm_action_type'] = 'RESTART' # Set the reason for confirmation
-                new_game_state['previous_state_before_confirm'] = states.STATE_GAME_SELECTION # Store where to return if 'No'
-                new_game_state['current_state'] = states.STATE_CONFIRM_EXIT
-
-        elif action == actions_cfg.ACTION_RETURN_TO_MENU:
-            # This action now means "Return to Game Selection Menu" from a game
-            current_state_str = new_game_state['current_state']
-            # Check if in a game state where returning might lose progress or is disruptive
-            if current_state_str in [states.STATE_DRAW_POKER_WAITING_FOR_HOLD,
-                                     states.STATE_MULTI_POKER_WAITING_FOR_HOLD,
-                                     states.STATE_BLACKJACK_PLAYER_TURN,
-                                     states.STATE_ROULETTE_BETTING, # Confirm if bets placed
-                                     states.STATE_ROULETTE_SPINNING]: # Confirm/disallow during spin
-                if sounds.get("button"): sounds["button"].play()
-
-                # Disallow exit during spin
-                if current_state_str == states.STATE_ROULETTE_SPINNING:
-                    new_game_state['message'] = "Cannot exit while wheel is spinning!"
-                    # Keep current state, don't show confirmation
-                # If betting in roulette and bets exist, confirm
-                elif current_state_str == states.STATE_ROULETTE_BETTING and new_game_state.get('roulette_bets'):
-                    new_game_state['confirm_action_type'] = 'EXIT'
-                    new_game_state['confirm_exit_destination'] = states.STATE_GAME_SELECTION
-                    new_game_state['previous_state_before_confirm'] = current_state_str
-                    new_game_state['current_state'] = states.STATE_CONFIRM_EXIT
-                # If betting in roulette but no bets placed yet, allow direct exit
-                elif current_state_str == states.STATE_ROULETTE_BETTING and not new_game_state.get('roulette_bets'):
-                     reset_state = reset_game_variables()
-                     new_game_state.update(reset_state)
-                     new_game_state['message'] = ""
-                     new_game_state['current_state'] = states.STATE_GAME_SELECTION
-                # Otherwise (Poker hold states, Blackjack turn), confirm exit
-                else:
-                    new_game_state['confirm_action_type'] = 'EXIT'
-                    new_game_state['confirm_exit_destination'] = states.STATE_GAME_SELECTION
-                    new_game_state['previous_state_before_confirm'] = current_state_str
-                    new_game_state['current_state'] = states.STATE_CONFIRM_EXIT
-
-            # If in a state where returning is safe (idle, showing result)
-            elif current_state_str not in [states.STATE_TOP_MENU, states.STATE_GAME_SELECTION, states.STATE_SETTINGS, states.STATE_GAME_OVER, states.STATE_CONFIRM_EXIT]:
-                if sounds.get("button"): sounds["button"].play()
-                reset_state = reset_game_variables()
-                new_game_state.update(reset_state)
-                # Clear potential game-specific state
-                new_game_state['player_hand'] = []
-                new_game_state['dealer_hand'] = []
-                new_game_state['multi_hands'] = []
-                new_game_state['multi_results'] = []
-                new_game_state['roulette_bets'] = {} # Clear roulette bets too
-                new_game_state['message'] = "" # Clear any lingering game messages
-                new_game_state['current_state'] = states.STATE_GAME_SELECTION
-
-        elif action == actions_cfg.ACTION_DEAL_DRAW:
-            current_state_str = new_game_state['current_state']
-            if current_state_str == states.STATE_DRAW_POKER_IDLE: # Start new Draw Poker game
-                if sounds.get("button"): sounds["button"].play()
-                round_state = start_draw_poker_round(game_state_manager, sounds)
-                new_game_state.update(round_state)
-            elif current_state_str == states.STATE_MULTI_POKER_IDLE: # Start new Multi Poker game
-                if sounds.get("button"): sounds["button"].play()
-                round_state = start_multi_poker_round(game_state_manager, sounds)
-                new_game_state.update(round_state)
-            elif current_state_str == states.STATE_DRAW_POKER_WAITING_FOR_HOLD: # Process Draw Poker draw
-                if sounds.get("button"): sounds["button"].play()
-                draw_results = process_drawing(
-                    new_game_state['hand'],
-                    new_game_state['held_indices'],
-                    new_game_state['deck'],
-                    game_state_manager,
-                    sounds
-                )
-                new_game_state.update(draw_results)
-            elif current_state_str == states.STATE_MULTI_POKER_WAITING_FOR_HOLD: # Process Multi Poker draw
-                 if sounds.get("button"): sounds["button"].play()
-                 multi_draw_results = process_multi_drawing(
-                     new_game_state['hand'],
-                     new_game_state['held_indices'],
-                     game_state_manager,
-                     sounds
-                 )
-                 new_game_state.update(multi_draw_results)
-            elif current_state_str == states.STATE_DRAW_POKER_SHOWING_RESULT: # Start next Draw Poker hand
-                if sounds.get("button"): sounds["button"].play()
-                # Check if can play before starting next round
-                if game_state_manager.can_afford_bet(1): # Cost for next draw poker game
-                    round_state = start_draw_poker_round(game_state_manager, sounds)
-                    new_game_state.update(round_state)
-                else:
-                    # Not enough money, transition to Game Over from here
-                    reset_state = reset_game_variables()
-                    new_game_state.update(reset_state)
-                    new_game_state['message'] = "GAME OVER! Not enough money."
-                    new_game_state['current_state'] = states.STATE_GAME_OVER
-            elif current_state_str == states.STATE_MULTI_POKER_SHOWING_RESULT: # Start next Multi Poker hand
-                 if sounds.get("button"): sounds["button"].play()
-                 cost_next_multi = layout_cards.NUM_MULTI_HANDS # Use config
-                 if game_state_manager.can_afford_bet(cost_next_multi):
-                     round_state = start_multi_poker_round(game_state_manager, sounds)
-                     new_game_state.update(round_state)
-                 else:
-                     # Not enough money for multi-poker
-                     reset_state = reset_game_variables()
-                     new_game_state.update(reset_state)
-                     new_game_state['message'] = f"GAME OVER! Need ${cost_next_multi} for Multi Poker."
-                     new_game_state['current_state'] = states.STATE_GAME_OVER
-            elif current_state_str == states.STATE_BLACKJACK_IDLE: # Start new Blackjack game
-                if sounds.get("button"): sounds["button"].play()
-                round_state = start_blackjack_round(game_state_manager, sounds)
-                new_game_state.update(round_state)
-            elif current_state_str == states.STATE_BLACKJACK_SHOWING_RESULT: # Start next Blackjack hand
-                if sounds.get("button"): sounds["button"].play()
-                if game_state_manager.can_afford_bet(1): # Cost for next blackjack game
-                    round_state = start_blackjack_round(game_state_manager, sounds)
-                    new_game_state.update(round_state)
-                else:
-                    reset_state = reset_game_variables()
-                    new_game_state.update(reset_state)
-                    new_game_state['message'] = "GAME OVER! Not enough money for Blackjack."
-                    new_game_state['current_state'] = states.STATE_GAME_OVER
-
-        elif action == actions_cfg.ACTION_HOLD_TOGGLE:
-            if new_game_state['current_state'] in [states.STATE_DRAW_POKER_WAITING_FOR_HOLD, states.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
-                index = payload
-                if index is not None and 0 <= index < 5: # Basic validation
-                    held_indices = new_game_state['held_indices']
-                    if index in held_indices:
-                        held_indices.remove(index)
-                        if sounds.get("hold"): sounds["hold"].play()
-                    else:
-                        held_indices.append(index)
-                        held_indices.sort() # Keep sorted for consistency
-                        if sounds.get("hold"): sounds["hold"].play()
-                    new_game_state['held_indices'] = held_indices # Update state
-
-        elif action == actions_cfg.ACTION_BLACKJACK_HIT or action == actions_cfg.ACTION_BLACKJACK_STAND:
-             if new_game_state['current_state'] == states.STATE_BLACKJACK_PLAYER_TURN:
-                 # Let process_blackjack_action handle sound internally based on hit/stand
-                 action_result_state = process_blackjack_action(action, new_game_state, game_state_manager, sounds)
-                 new_game_state.update(action_result_state)
-
-        elif action == actions_cfg.ACTION_PLAY_AGAIN:
-             if new_game_state['current_state'] == states.STATE_GAME_OVER:
-                 if sounds.get("button"): sounds["button"].play()
-                 # Reset money by re-initializing the manager
-                 reset_state = reset_game_variables()
-                 new_game_state.update(reset_state)
-                 new_game_state['current_state'] = states.STATE_TOP_MENU # Go back to top menu
-                 # Signal that money needs reset? Or handle in main loop based on PLAY_AGAIN action.
-                 new_game_state['needs_money_reset'] = True # Add a flag
-
-        # --- Confirmation Actions ---
-        elif action == actions_cfg.ACTION_CONFIRM_YES:
-            if new_game_state['current_state'] == states.STATE_CONFIRM_EXIT:
-                if sounds.get("button"): sounds["button"].play()
-                action_type = new_game_state.get('confirm_action_type')
-
-                if action_type == 'QUIT':
-                    # Actually quit the game now
-                    running = False # Signal main loop to exit
-                    # No need to change state, loop will terminate
-
-                elif action_type == 'RESTART':
-                    # Set flag for main loop to reset money and return to game selection
-                    new_game_state['needs_money_reset'] = True
-                    new_game_state['current_state'] = states.STATE_GAME_SELECTION # Go back to game selection after reset
-                    # Clear confirmation flags
-                    new_game_state['confirm_action_type'] = None
-                    new_game_state['previous_state_before_confirm'] = None
-
-                else: # Default to 'EXIT' action (Exit to Game Menu)
-                    # Proceed to the intended destination after confirming exit
-                    destination_state = new_game_state.get('confirm_exit_destination', states.STATE_GAME_SELECTION) # Default to Game Select
-                    reset_state = reset_game_variables()
-                    new_game_state.update(reset_state)
-                    # Clear potential game-specific state
-                    new_game_state['player_hand'] = []
-                    new_game_state['dealer_hand'] = []
-                    new_game_state['multi_hands'] = []
-                    new_game_state['multi_results'] = []
-                    new_game_state['roulette_bets'] = {} # Clear roulette bets too
-                    new_game_state['message'] = "" # Clear any lingering game messages
-                    new_game_state['current_state'] = destination_state
-                    # Clear confirmation flags
-                    new_game_state['confirm_action_type'] = None
-                    new_game_state['confirm_exit_destination'] = None
-                    new_game_state['previous_state_before_confirm'] = None
-
-
-        elif action == actions_cfg.ACTION_CONFIRM_NO:
-            if new_game_state['current_state'] == states.STATE_CONFIRM_EXIT:
-                if sounds.get("button"): sounds["button"].play()
-                # Return to the state the player was in before the confirmation was triggered
-                previous_state = new_game_state.get('previous_state_before_confirm')
-                if previous_state:
-                    new_game_state['current_state'] = previous_state
-                else:
-                    # Fallback if previous state wasn't stored correctly
-                    new_game_state['current_state'] = states.STATE_GAME_SELECTION
-                # Clear confirmation flags
-                new_game_state['confirm_action_type'] = None
-                new_game_state['confirm_exit_destination'] = None
-                new_game_state['previous_state_before_confirm'] = None
-
-        # --- Roulette Actions ---
-        elif action == actions_cfg.ACTION_ROULETTE_BET:
-             # Allow placing bets in BETTING state, or in RESULT state (implicitly clears old bets/results)
-             if new_game_state['current_state'] in [states.STATE_ROULETTE_BETTING, states.STATE_ROULETTE_RESULT]:
-                 # If placing a bet after a result, reset the result state first
-                 if new_game_state['current_state'] == states.STATE_ROULETTE_RESULT:
-                     new_game_state['roulette_bets'] = {}
-                     new_game_state['roulette_winning_number'] = None
-                     new_game_state['result_message'] = "" # Use new_state here
-                     new_game_state['message'] = "Place your bets!"
-                     new_game_state['current_state'] = states.STATE_ROULETTE_BETTING # Change state back
-                     game_state_manager.reset_round_bet() # Reset internal tracker for new round
-
-                 bet_result_state = place_roulette_bet(payload, new_game_state, game_state_manager, sounds)
-                 new_game_state.update(bet_result_state)
-
-        elif action == actions_cfg.ACTION_ROULETTE_SPIN:
-             if new_game_state['current_state'] == states.STATE_ROULETTE_BETTING:
-                 total_bet = new_game_state.get('roulette_total_bet', 0)
-                 if total_bet <= 0:
-                     new_game_state['message'] = "Place a bet before spinning!"
-                     if sounds.get("lose"): sounds["lose"].play() # Error/negative sound
-                 elif game_state_manager.can_afford_bet(total_bet):
-                     if game_state_manager.deduct_bet(total_bet): # Deduct the total bet amount
-                         if sounds.get("deal"): sounds["deal"].play() # Sound for spin start
-
-                         # *** Determine winning number HERE, before animation starts ***
-                         winning_number = random.choice(layout_roulette.ROULETTE_WHEEL_NUMBERS) # Use config
-                         new_game_state['roulette_winning_number'] = winning_number
-
-                         # Set state and timer for animation
-                         new_game_state['current_state'] = states.STATE_ROULETTE_SPINNING
-                         new_game_state['roulette_spin_timer'] = anim.ROULETTE_SPIN_DURATION # Use config
-                         new_game_state['message'] = "Spinning..."
-                         new_game_state['result_message'] = "" # Clear previous result
-                     else:
-                         # Should not happen if can_afford_bet passed, but as a fallback
-                         new_game_state['message'] = "Error deducting bet!"
-                         if sounds.get("lose"): sounds["lose"].play()
-                 else:
-                     new_game_state['message'] = f"Not enough money! Need ${total_bet} to spin."
-                     if sounds.get("lose"): sounds["lose"].play()
-
-        elif action == actions_cfg.ACTION_ROULETTE_CLEAR_BETS: # Check constant name
-             # Allow clearing in BETTING or RESULT state
-             if new_game_state['current_state'] in [states.STATE_ROULETTE_BETTING, states.STATE_ROULETTE_RESULT]:
-                 if new_game_state.get('roulette_bets'): # Only clear if bets exist
-                     if sounds.get("button"): sounds["button"].play()
-                     new_game_state['roulette_bets'] = {}
-                     new_game_state['roulette_total_bet'] = 0
-                     new_game_state['result_message'] = "" # Clear result message too
-                     new_game_state['message'] = "Bets cleared. Place new bets."
-                     game_state_manager.reset_round_bet() # Reset internal tracker
-                     # If clearing from RESULT state, transition back to BETTING
-                     if new_game_state['current_state'] == states.STATE_ROULETTE_RESULT:
-                          new_game_state['current_state'] = states.STATE_ROULETTE_BETTING
-                          new_game_state['roulette_winning_number'] = None # Clear winning number display
-
-        # --- Slots Actions ---
-        elif action == actions_cfg.ACTION_SLOTS_SPIN:
-            # Check if we are in a state where spinning is allowed
-            if new_game_state['current_state'] in [states.STATE_SLOTS_IDLE, states.STATE_SLOTS_SHOWING_RESULT]:
-                # Call the function to handle the spin action
-                spin_result_state = process_slots_spin(new_game_state, game_state_manager, sounds)
-                new_game_state.update(spin_result_state)
+        # If the state changes, the next action in the list will be processed
+        # according to the *new* state's handler in the next iteration.
 
     # --- End of action processing loop ---
 
-    # Update the running state in the dictionary before returning
-    new_game_state['running'] = running
+    # The 'running' state is now managed within handle_confirmation_action
 
     return new_game_state
