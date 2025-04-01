@@ -11,9 +11,17 @@ CARD_SPACING = 10
 HOLD_BUTTON_HEIGHT = 40
 HOLD_BUTTON_SPACING = 5
 
-# Calculate hand positioning
+# Calculate single hand positioning
 HAND_Y_POS = 250
 HAND_X_START = (SCREEN_WIDTH - 5 * (CARD_WIDTH + CARD_SPACING)) // 2
+
+# Multi-Hand Constants
+NUM_MULTI_HANDS = 3
+MULTI_HAND_CARD_SCALE = 0.8 # Scale factor for multi-hand cards (optional)
+MULTI_CARD_WIDTH = int(CARD_WIDTH * MULTI_HAND_CARD_SCALE)
+MULTI_CARD_HEIGHT = int(CARD_HEIGHT * MULTI_HAND_CARD_SCALE)
+MULTI_HAND_Y_START = 50 # Y position for the top multi-hand
+MULTI_HAND_Y_SPACING = MULTI_CARD_HEIGHT + 15 # Vertical space between multi-hands
 
 # Colors (RGB tuples)
 WHITE = (255, 255, 255)
@@ -32,11 +40,10 @@ STATE_DRAW_POKER_DEALING = "DRAW_POKER_DEALING" # Optional: Could add animation 
 STATE_DRAW_POKER_WAITING_FOR_HOLD = "DRAW_POKER_WAITING_FOR_HOLD"
 STATE_DRAW_POKER_DRAWING = "DRAW_POKER_DRAWING" # Optional: Could add animation later
 STATE_DRAW_POKER_SHOWING_RESULT = "DRAW_POKER_SHOWING_RESULT"
-# Add states for Multi Poker later
-# STATE_MULTI_POKER_DEALING = "MULTI_POKER_DEALING"
-# STATE_MULTI_POKER_WAITING_FOR_HOLD = "MULTI_POKER_WAITING_FOR_HOLD"
-# STATE_MULTI_POKER_DRAWING = "MULTI_POKER_DRAWING"
-# STATE_MULTI_POKER_SHOWING_RESULT = "MULTI_POKER_SHOWING_RESULT"
+# Multi Poker States
+STATE_MULTI_POKER_WAITING_FOR_HOLD = "MULTI_POKER_WAITING_FOR_HOLD"
+STATE_MULTI_POKER_DRAWING = "MULTI_POKER_DRAWING" # Optional animation state
+STATE_MULTI_POKER_SHOWING_RESULT = "MULTI_POKER_SHOWING_RESULT"
 STATE_GAME_OVER = "GAME_OVER"
 
 # Font Sizes
@@ -45,6 +52,7 @@ MESSAGE_FONT_SIZE = 28
 PAY_TABLE_FONT_SIZE = 20
 BUTTON_FONT_SIZE = 30
 RESULT_FONT_SIZE = 36
+MULTI_RESULT_FONT_SIZE = 20 # Smaller font for individual hand results
 HOLD_FONT_SIZE = 24
 
 # Animation Constants
@@ -71,6 +79,15 @@ for i in range(5):
     x = HAND_X_START + i * (CARD_WIDTH + CARD_SPACING)
     rect = pygame.Rect(x, HAND_Y_POS, CARD_WIDTH, CARD_HEIGHT)
     CARD_RECTS.append(rect)
+
+# Multi-Hand Card Rectangles (calculated dynamically in Renderer based on hand index)
+# We define the starting position and spacing here.
+MULTI_HAND_X_START = (SCREEN_WIDTH - 5 * (MULTI_CARD_WIDTH + CARD_SPACING * MULTI_HAND_CARD_SCALE)) // 2
+
+# Pay Table Position (might need adjustment for multi-hand)
+PAY_TABLE_X = 20
+PAY_TABLE_Y = 20
+PAY_TABLE_MULTI_X = SCREEN_WIDTH - 250 # Position pay table to the right in multi-mode
 
 # Hold Button Rectangles (derived from CARD_RECTS)
 HOLD_BUTTON_RECTS = []

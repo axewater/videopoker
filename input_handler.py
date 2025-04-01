@@ -41,11 +41,9 @@ class InputHandler:
                     if constants.DRAW_POKER_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_CHOOSE_DRAW_POKER, None))
                     elif constants.MULTI_POKER_BUTTON_RECT.collidepoint(mouse_pos):
-                        # Add action for multi poker later
-                        # actions.append((constants.ACTION_CHOOSE_MULTI_POKER, None))
-                        print("Multi Poker selected (not implemented yet)") # Placeholder
+                        actions.append((constants.ACTION_CHOOSE_MULTI_POKER, None))
 
-                elif current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
+                elif current_state in [constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
                     # Check Deal/Draw button first
                     if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_DEAL_DRAW, None))
@@ -63,7 +61,7 @@ class InputHandler:
                                     actions.append((constants.ACTION_HOLD_TOGGLE, i))
                                     break # Process only one hold button click
 
-                elif current_state == constants.STATE_DRAW_POKER_SHOWING_RESULT:
+                elif current_state in [constants.STATE_DRAW_POKER_SHOWING_RESULT, constants.STATE_MULTI_POKER_SHOWING_RESULT]:
                     if constants.DEAL_DRAW_BUTTON_RECT.collidepoint(mouse_pos):
                         actions.append((constants.ACTION_DEAL_DRAW, None))
 

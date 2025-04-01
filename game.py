@@ -1,7 +1,9 @@
+# /game.py
 import pygame
 import sys
 from typing import List, Tuple, Optional
 import os # Needed for joining sound paths
+import copy # For copying hands in multi-poker
 
 import constants
 from card import Card
@@ -48,9 +50,12 @@ class Game:
         # Game State Variables
         self.current_state = constants.STATE_MAIN_MENU
         self.hand: List[Card] = []
+        self.multi_hands: List[List[Card]] = [] # For multi-poker results
+        self.multi_results: List[Tuple[HandRank, str, int]] = [] # Results for each multi-hand
         self.held_indices: List[int] = []
         self.message = "" # No message on main menu initially
         self.result_message = ""
+        self.total_winnings = 0 # Track total winnings across multi-hands
         self.final_hand_rank: Optional[HandRank] = None # Store the rank enum/constant of the final hand
 
         # Money animation state
@@ -84,17 +89,21 @@ class Game:
     def _reset_game_variables(self):
         """Resets variables needed for starting a new game or returning to menu."""
         self.hand = []
+        self.multi_hands = []
+        self.multi_results = []
         self.held_indices = []
         self.message = ""
         self.result_message = ""
         self.final_hand_rank = None
+        self.total_winnings = 0
         self.money_animation_active = False
         self.money_animation_timer = 0
         self.money_animation_amount = 0
         # Don't reset game_state_manager.money here
 
     def _start_draw_poker_round(self):
-        """Resets variables for a new round of play."""
+        """Starts a new round of standard Draw Poker."""
+        self.game_state_manager.set_cost_per_game(1) # Ensure cost is 1
         if self.game_state_manager.start_game():
             self._reset_game_variables() # Reset common variables
             self.deck = Deck() # Get a fresh shuffled deck
@@ -106,6 +115,21 @@ class Game:
             self._reset_game_variables() # Reset variables even if game over
             self.message = "GAME OVER! Not enough money."
             self.result_message = ""
+            self.current_state = constants.STATE_GAME_OVER
+
+    def _start_multi_poker_round(self):
+        """Starts a new round of Multi Poker."""
+        self.game_state_manager.set_cost_per_game(constants.NUM_MULTI_HANDS) # Set cost for N hands
+        if self.game_state_manager.start_game():
+            self._reset_game_variables()
+            self.deck = Deck() # Fresh deck for the initial deal
+            self.hand = self.deck.deal(5) # Deal the base hand
+            self.message = f"Click HOLD buttons (Cost: {constants.NUM_MULTI_HANDS}), then click DRAW"
+            self.current_state = constants.STATE_MULTI_POKER_WAITING_FOR_HOLD
+            self.sounds["deal"].play()
+        else:
+            self._reset_game_variables()
+            self.message = f"GAME OVER! Need ${constants.NUM_MULTI_HANDS} to play Multi Poker."
             self.current_state = constants.STATE_GAME_OVER
 
     def _process_drawing(self):
@@ -157,7 +181,7 @@ class Game:
         self.final_hand_rank = rank # Store the actual rank
 
         if payout > 0:
-            winnings = payout * self.game_state_manager.cost_per_game
+            winnings = payout * 1 # Payout is based on a 1-unit bet
             self.result_message = f"WINNER! {hand_name}! +${winnings}"
             self.sounds["win"].play() # Play win sound
             self.game_state_manager.add_winnings(winnings)
@@ -173,6 +197,94 @@ class Game:
         self.message = "" # Clear the action message
         self.current_state = constants.STATE_DRAW_POKER_SHOWING_RESULT
 
+    def _process_multi_drawing(self):
+        """Handles drawing cards for multiple hands in Multi Poker."""
+        num_hands = constants.NUM_MULTI_HANDS
+        self.multi_hands = []
+        self.multi_results = []
+        self.total_winnings = 0
+
+        # Create separate decks for each hand draw (excluding the base hand's deck)
+        # Each new deck should be a standard 52-card deck.
+        draw_decks = [Deck() for _ in range(num_hands)]
+
+        # The base hand (self.hand) was dealt from self.deck.
+        # The subsequent draws for each of the N hands will use the new decks.
+
+        held_cards = {i: self.hand[i] for i in self.held_indices}
+
+        for i in range(num_hands):
+            current_hand = [None] * 5
+            # Place held cards
+            for index, card in held_cards.items():
+                current_hand[index] = card
+
+            # Determine cards needed
+            cards_to_draw = 5 - len(held_cards)
+
+            # Deal new cards from the corresponding draw deck
+            try:
+                # Ensure dealt cards don't conflict with held cards (though unlikely with fresh decks)
+                new_cards = []
+                deck_for_draw = draw_decks[i]
+                attempts = 0
+                while len(new_cards) < cards_to_draw and attempts < 100 and len(deck_for_draw) > 0:
+                    potential_card = deck_for_draw.deal(1)[0]
+                    # Check if this card (rank and suit) is already held
+                    is_held = any(potential_card == held_card for held_card in held_cards.values())
+                    if not is_held:
+                         # Also check if it's already been drawn for *this specific hand*
+                         is_drawn_for_this_hand = any(potential_card == drawn_card for drawn_card in new_cards)
+                         if not is_drawn_for_this_hand:
+                             new_cards.append(potential_card)
+                    attempts += 1 # Prevent infinite loops in edge cases
+
+                if len(new_cards) < cards_to_draw:
+                     raise IndexError(f"Could not deal enough unique cards for hand {i+1}")
+
+            except IndexError as e:
+                print(f"Error dealing for multi-hand {i+1}: {e}")
+                self.message = "Deck error during multi-draw!"
+                self.current_state = constants.STATE_GAME_OVER # Or error state
+                return
+
+            # Place new cards
+            new_card_idx = 0
+            for j in range(5):
+                if current_hand[j] is None:
+                    current_hand[j] = new_cards[new_card_idx]
+                    new_card_idx += 1
+
+            final_hand = [card for card in current_hand if card is not None]
+            if len(final_hand) != 5:
+                 print(f"Error: Multi-hand {i+1} reconstruction failed.")
+                 self.message = "Multi-hand reconstruction error!"
+                 self.current_state = constants.STATE_GAME_OVER
+                 return
+
+            # Evaluate this hand
+            rank, name, payout = evaluate_hand(final_hand)
+            self.multi_hands.append(final_hand)
+            self.multi_results.append((rank, name, payout))
+            self.total_winnings += payout # Payout is per unit bet (1)
+
+        # Update game state
+        if self.total_winnings > 0:
+            self.result_message = f"WINNER! Total: +${self.total_winnings}"
+            self.sounds["win"].play()
+            self.game_state_manager.add_winnings(self.total_winnings)
+            # Trigger money animation for total amount
+            self.money_animation_active = True
+            self.money_animation_amount = self.total_winnings
+            self.money_animation_timer = constants.MONEY_ANIMATION_DURATION
+        else:
+            self.result_message = "No winning hands."
+            self.sounds["lose"].play()
+
+        self.sounds["draw"].play() # Play draw sound once after all hands are set
+        self.message = "" # Clear action message
+        self.current_state = constants.STATE_MULTI_POKER_SHOWING_RESULT
+
     def _process_input(self, actions: List[Tuple[str, Optional[any]]]):
         """Processes actions received from the InputHandler."""
         for action, payload in actions:
@@ -186,6 +298,11 @@ class Game:
                 if self.current_state == constants.STATE_MAIN_MENU:
                     self._start_draw_poker_round() # Start the first round
 
+            elif action == constants.ACTION_CHOOSE_MULTI_POKER:
+                self.sounds["button"].play()
+                if self.current_state == constants.STATE_MAIN_MENU:
+                    self._start_multi_poker_round()
+
             elif action == constants.ACTION_RETURN_TO_MENU:
                 self.sounds["button"].play()
                 self._reset_game_variables()
@@ -197,12 +314,16 @@ class Game:
                 # Deal/Draw button now only works in specific game states
                 if self.current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
                     self._process_drawing()
+                elif self.current_state == constants.STATE_MULTI_POKER_WAITING_FOR_HOLD:
+                    self._process_multi_drawing()
                 elif self.current_state == constants.STATE_DRAW_POKER_SHOWING_RESULT:
                     self._start_draw_poker_round() # Start next game if possible
                     # Deal sound is played inside _start_new_round
+                elif self.current_state == constants.STATE_MULTI_POKER_SHOWING_RESULT:
+                    self._start_multi_poker_round() # Start next multi-poker game
 
             elif action == constants.ACTION_HOLD_TOGGLE:
-                if self.current_state == constants.STATE_DRAW_POKER_WAITING_FOR_HOLD:
+                if self.current_state in [constants.STATE_DRAW_POKER_WAITING_FOR_HOLD, constants.STATE_MULTI_POKER_WAITING_FOR_HOLD]:
                     index = payload
                     if index is not None:
                         if index in self.held_indices:
@@ -216,63 +337,6 @@ class Game:
             elif action == constants.ACTION_PLAY_AGAIN:
                  if self.current_state == constants.STATE_GAME_OVER:
                      self.sounds["button"].play()
-                     # Reset game state completely
-                     self.game_state_manager = GameState(starting_money=10) # Or original starting money
-                     self._reset_game_variables()
-                     self.message = "" # No message on main menu
-                     self.current_state = constants.STATE_MAIN_MENU
+                Okay, here's the continuation of the updated `game.py` file:
 
-    def _update(self):
-        """Handles game logic updates, like animations."""
-        # Update money animation timer
-        if self.money_animation_active:
-            self.money_animation_timer -= 1
-            if self.money_animation_timer <= 0:
-                self.money_animation_active = False
-                self.money_animation_amount = 0 # Reset amount
-
-    def _render(self):
-        """Draws the current game state to the screen."""
-        # Check if we are in the main menu state
-        if self.current_state == constants.STATE_MAIN_MENU:
-            self.renderer.draw_main_menu()
-            pygame.display.flip()
-            return # Don't draw the rest of the game screen
-
-        game_data = {
-            "money": self.game_state_manager.money,
-            "can_play": self.game_state_manager.can_play(),
-            "hand": self.hand,
-            "held_indices": self.held_indices,
-            "message": self.message,
-            "result_message": self.result_message,
-            "current_state": self.current_state,
-            "winning_rank": self.final_hand_rank, # Pass the winning rank
-            # Pass animation state
-            "money_animation_active": self.money_animation_active,
-            "money_animation_amount": self.money_animation_amount,
-        }
-        self.renderer.draw_game_screen(game_data)
-        pygame.display.flip() # Update the full screen
-
-    def run(self):
-        """The main game loop."""
-        while self.running:
-            # 1. Handle Input
-            actions = self.input_handler.handle_events(self.current_state)
-
-            # 2. Process Input & Update Game State
-            self._process_input(actions)
-
-            # 3. Update Game Logic (if any time-based updates needed)
-            self._update()
-
-            # 4. Render Output
-            self._render()
-
-            # 5. Control Frame Rate
-            self.clock.tick(30) # Limit FPS to 30
-
-        # Cleanup
-        pygame.quit()
-        sys.exit()
+/game.py

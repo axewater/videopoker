@@ -6,7 +6,7 @@ class GameState:
         if starting_money < 1:
             raise ValueError("Starting money must be at least 1.")
         self._money = starting_money
-        self.cost_per_game = 1
+        self._cost_per_game = 1 # Default cost
 
     @property
     def money(self) -> int:
@@ -14,13 +14,23 @@ class GameState:
         return self._money
 
     def can_play(self) -> bool:
-        """Checks if the player has enough money to play a game."""
-        return self._money >= self.cost_per_game
+        """Checks if the player has enough money for the current cost per game."""
+        return self._money >= self._cost_per_game
+
+    def set_cost_per_game(self, cost: int):
+        """Sets the cost for the next game."""
+        if cost < 1:
+            raise ValueError("Cost per game must be at least 1.")
+        self._cost_per_game = cost
+
+    def get_cost_per_game(self) -> int:
+        """Returns the current cost per game."""
+        return self._cost_per_game
 
     def start_game(self) -> bool:
         """Deducts the cost of a game if the player can afford it."""
         if self.can_play():
-            self._money -= self.cost_per_game
+            self._money -= self._cost_per_game
             return True
         return False
 
@@ -34,6 +44,7 @@ if __name__ == '__main__':
     # Example usage
     state = GameState(starting_money=5)
     print(f"Initial money: ${state.money}")
+    print(f"Cost per game: ${state.get_cost_per_game()}")
     print(f"Can play? {state.can_play()}")
 
     if state.start_game():
@@ -43,6 +54,10 @@ if __name__ == '__main__':
 
     state.add_winnings(3)
     print(f"Won $3. Current money: ${state.money}")
+
+    # Test changing cost
+    state.set_cost_per_game(3)
+    print(f"New cost per game: ${state.get_cost_per_game()}")
 
     # Play until broke
     while state.start_game():
