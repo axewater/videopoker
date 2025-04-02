@@ -7,6 +7,7 @@ Imports other config modules for dependencies.
 import pygame
 import config_display as display
 import config_layout_general as layout_general
+import config_colors as colors
 from typing import Dict, Any
 
 # Roulette Constants (Initial Setup)
@@ -24,6 +25,28 @@ ROULETTE_NUM_BOX_HEIGHT = 45 # Slightly taller boxes
 ROULETTE_GRID_SPACING = 4
 ROULETTE_NUM_COLS = 12
 ROULETTE_NUM_ROWS = 3
+
+# --- Wheel and Ball Animation Constants ---
+WHEEL_CENTER_X = display.SCREEN_WIDTH // 2
+WHEEL_CENTER_Y = display.SCREEN_HEIGHT // 2
+WHEEL_PERSPECTIVE_RATIO = 0.6 # How much shorter the vertical radius is for ellipse effect
+
+# Radii for drawing (Horizontal - Vertical will be calculated using perspective ratio)
+RIM_OUTER_RADIUS = min(WHEEL_CENTER_X, WHEEL_CENTER_Y) - 50 # Absolute outer edge
+RIM_THICKNESS = 15
+RIM_INNER_RADIUS = RIM_OUTER_RADIUS - RIM_THICKNESS
+TRACK_OUTER_RADIUS = RIM_INNER_RADIUS # Ball track starts inside the rim
+TRACK_INNER_RADIUS = TRACK_OUTER_RADIUS - 40 # Inner edge of the ball track area
+NUMBER_AREA_OUTER_RADIUS = TRACK_INNER_RADIUS # Numbers start inside the track
+NUMBER_AREA_INNER_RADIUS = NUMBER_AREA_OUTER_RADIUS - 60 # Inner edge of the number pockets, near the hub
+HUB_RADIUS = NUMBER_AREA_INNER_RADIUS - 10 # Radius of the central hub structure
+
+BALL_START_TRACK_RADIUS = TRACK_OUTER_RADIUS - 5 # Ball starts near outer edge of track
+BALL_END_TRACK_RADIUS = TRACK_INNER_RADIUS + 5 # Ball settles near inner edge of track
+BALL_RADIUS = 6
+BALL_COLOR = colors.WHITE
+BALL_SHADOW_COLOR = (50, 50, 50, 150) # Semi-transparent shadow
+BALL_SHADOW_OFFSET = 2
 
 # --- Calculate Roulette Rects ---
 ROULETTE_NUMBER_RECTS = {}

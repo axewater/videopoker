@@ -47,6 +47,7 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
     if new_state['current_state'] == states.STATE_ROULETTE_SPINNING:
         spin_timer = new_state.get('roulette_spin_timer', 0)
         pause_timer = new_state.get('roulette_pause_timer', 0)
+        flash_timer = new_state.get('winning_slot_flash_count', 0)
 
         if spin_timer > 0:
             # Still spinning
@@ -65,14 +66,13 @@ def update_game(current_game_state: Dict[str, Any], game_state_manager: GameStat
             new_state['roulette_pause_timer'] = pause_timer
 
             # Update flashing state
-            flash_count = new_state.get('winning_slot_flash_count', 0)
-            if flash_count > 0:
+            if flash_timer > 0:
                  # Decrement count every interval
                  if pause_timer % anim.ROULETTE_FLASH_INTERVAL == 0:
                      new_state['winning_slot_flash_visible'] = not new_state.get('winning_slot_flash_visible', True)
-                     flash_count -= 1
-                     new_state['winning_slot_flash_count'] = flash_count
-                 if flash_count == 0: # Flashing finished
+                     flash_timer -= 1
+                     new_state['winning_slot_flash_count'] = flash_timer
+                 if flash_timer <= 0: # Flashing finished
                       new_state['winning_slot_flash_active'] = False
                       new_state['winning_slot_flash_visible'] = True # Ensure visible at end
 

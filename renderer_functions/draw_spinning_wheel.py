@@ -4,14 +4,17 @@ import pygame
 import math
 from typing import Dict, Any, Tuple
 
+# --- Config Imports ---
 import config_display as display
+import config_colors as colors
 import config_animations as animations
 import config_layout_roulette as layout_roulette
-import config_colors as colors
 from .draw_text import draw_text
+from .draw_ellipse import draw_ellipse
 from .get_font import get_font # Helper to get fonts if needed directly
 
 # Helper to get color (copied from draw_roulette_screen for consistency)
+# --- Helper Function ---
 def get_number_color(number: int) -> Tuple[int, int, int]:
     """Returns the Pygame color for a given roulette number."""
     if number == 0:
@@ -23,16 +26,22 @@ def get_number_color(number: int) -> Tuple[int, int, int]:
     else:
         return colors.WHITE # Should not happen
 
+# --- Main Drawing Function ---
 def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Font], game_state: Dict[str, Any]):
     """Draws the spinning wheel overlay animation, including the pause/flash phase."""
 
-    center_x = display.SCREEN_WIDTH // 2
-    center_y = display.SCREEN_HEIGHT // 2
-    wheel_radius = min(center_x, center_y) - 50 # Radius of the main wheel
-    number_radius = wheel_radius - 25 # Radius for placing numbers
-    # --- Ball related variables removed ---
-    # ball_track_radius = wheel_radius + 15
-    # ball_radius = 8
+    # Use constants from layout config
+    center_pos = (layout_roulette.WHEEL_CENTER_X, layout_roulette.WHEEL_CENTER_Y)
+    perspective = layout_roulette.WHEEL_PERSPECTIVE_RATIO
+
+    # Radii (Horizontal)
+    rim_outer_r = layout_roulette.RIM_OUTER_RADIUS
+    rim_inner_r = layout_roulette.RIM_INNER_RADIUS
+    track_outer_r = layout_roulette.TRACK_OUTER_RADIUS
+    track_inner_r = layout_roulette.TRACK_INNER_RADIUS
+    num_outer_r = layout_roulette.NUMBER_AREA_OUTER_RADIUS
+    num_inner_r = layout_roulette.NUMBER_AREA_INNER_RADIUS
+    hub_r = layout_roulette.HUB_RADIUS
 
     # --- Semi-transparent background overlay ---
     overlay = pygame.Surface((display.SCREEN_WIDTH, display.SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -42,6 +51,7 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
     # --- Calculate Rotation ---
     spin_timer = game_state.get('roulette_spin_timer', 0)
     pause_timer = game_state.get('roulette_pause_timer', 0) # Get pause timer
+    flash_timer = game_state.get('winning_slot_flash_count', 0) # Use flash count timer
     total_duration = animations.ROULETTE_SPIN_DURATION
     winning_number = game_state.get('roulette_winning_number')
 
@@ -57,43 +67,73 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
 
     num_slots = len(layout_roulette.ROULETTE_WHEEL_NUMBERS)
     angle_per_slot = 360 / num_slots
-    # Target angle for the *wheel* rotation to place the winning slot at the top pointer
-    target_angle = (winning_number_index * angle_per_slot) + (angle_per_slot / 2)
+    # Target angle for the *ball* to stop at the winning slot's center
+    winning_slot_center_angle_deg = winning_number_index * angle_per_slot + angle_per_slot / 2
 
-    current_angle = 0
-    # --- Ball angle calculation removed ---
-    # ball_current_angle = 0
+    ball_current_angle = 0
+    ball_current_radius_x = layout_roulette.BALL_START_TRACK_RADIUS
+    ball_current_radius_y = ball_current_radius_x * layout_roulette.WHEEL_PERSPECTIVE_RATIO
 
-    # Determine wheel rotation based on phase (spinning or paused)
     if spin_timer > 0:
         # Still spinning
         time_elapsed = total_duration - spin_timer
         progress = time_elapsed / total_duration
         eased_progress = 1 - (1 - progress) ** 3 # Cubic ease-out
 
-        # Wheel rotation
-        total_spins = 5
-        current_angle = (total_spins * 360 + target_angle) * eased_progress
+        # Ball Animation Logic
+        # Ball spins faster initially and slows down, spiraling inwards
+        ball_total_spins = 8 # Number of full rotations the ball makes
+        ball_target_angle = (ball_total_spins * 360) + winning_slot_center_angle_deg # Absolute target angle
+        ball_progress = time_elapsed / total_duration
+        ball_eased_progress = 1 - (1 - ball_progress) ** 3 # Cubic ease-out for ball angle
+        ball_current_angle = ball_eased_progress * ball_target_angle
 
-        # --- Ball animation logic removed ---
+        # Ball radius decreases (spirals in)
+        radius_progress = time_elapsed / total_duration
+        # Ease-in for radius change (starts slow, gets faster)
+        radius_eased_progress = radius_progress ** 2.5
+        ball_current_radius_x = layout_roulette.BALL_START_TRACK_RADIUS - (layout_roulette.BALL_START_TRACK_RADIUS - layout_roulette.BALL_END_TRACK_RADIUS) * radius_eased_progress
+        ball_current_radius_y = ball_current_radius_x * layout_roulette.WHEEL_PERSPECTIVE_RATIO
 
     else: # spin_timer is 0, wheel is stopped (might be pausing/flashing)
-        current_angle = target_angle # Wheel stops at target angle
-        # --- Ball angle setting removed ---
+        # Ball settles into the winning slot
+        # Ball angle matches the winning slot's center angle
+        ball_current_angle = winning_slot_center_angle_deg
+        # Ball radius is at the final inner radius
+        ball_current_radius_x = layout_roulette.BALL_END_TRACK_RADIUS
+        ball_current_radius_y = ball_current_radius_x * layout_roulette.WHEEL_PERSPECTIVE_RATIO
 
-    # --- Ball coordinate calculation removed ---
+    # --- Draw Static Wheel Parts (Rim, Track) ---
+    # Outer Rim (e.g., dark wood color)
+    rim_color = (139, 69, 19) # Saddle Brown
+    draw_ellipse(surface, rim_color, center_pos, rim_outer_r, rim_outer_r * perspective)
+    # Inner part of rim (slightly lighter to create edge)
+    rim_inner_color = (160, 82, 45) # Sienna
+    draw_ellipse(surface, rim_inner_color, center_pos, rim_inner_r, rim_inner_r * perspective)
 
-    # --- Draw Wheel ---
-    wheel_surf_size = wheel_radius * 2
+    # Ball Track (e.g., lighter wood or grey)
+    track_color = (210, 180, 140) # Tan
+    draw_ellipse(surface, track_color, center_pos, track_outer_r, track_outer_r * perspective)
+    # Inner edge of track (darker to show depth)
+    track_inner_edge_color = (188, 143, 143) # Rosy Brown
+    draw_ellipse(surface, track_inner_edge_color, center_pos, track_inner_r, track_inner_r * perspective)
+
+    # Create a surface for the wheel itself to rotate
+    # Size needs to accommodate the largest rotating part (number area outer radius)
+    wheel_surf_size = int(num_outer_r * 2) + 4 # Add padding for anti-aliasing/rotation artifacts
     wheel_surf = pygame.Surface((wheel_surf_size, wheel_surf_size), pygame.SRCALPHA)
-    wheel_center = wheel_radius
+    wheel_center_on_surf = wheel_surf_size // 2 # Center of the wheel surface
 
-    number_font = fonts.get('pay_table')
+    number_font = fonts.get('pay_table') # Use a smaller font for numbers on wheel
     if not number_font: number_font = get_font(16)
 
     # Get flashing state
     is_flashing = game_state.get('winning_slot_flash_active', False)
     is_flash_visible = game_state.get('winning_slot_flash_visible', True)
+
+    # --- Draw Rotating Wheel Parts (Number Area, Hub) onto wheel_surf ---
+    # Number Area Base (Dark Green/Black) - Draw as a filled ring (ellipse minus inner ellipse)
+    draw_ellipse(wheel_surf, colors.DARK_GREEN, (wheel_center_on_surf, wheel_center_on_surf), num_outer_r, num_outer_r * perspective)
 
     for i, number in enumerate(layout_roulette.ROULETTE_WHEEL_NUMBERS):
         start_angle_deg = i * angle_per_slot
@@ -101,7 +141,7 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
         color = get_number_color(number)
 
         # --- Flashing Logic ---
-        is_winning_slot = (number == winning_number)
+        is_winning_slot = (number == winning_number and spin_timer == 0) # Only flash when stopped
         current_color = color
         border_thickness = 1 # Default border
         border_color = colors.GOLD
@@ -115,57 +155,89 @@ def draw_spinning_wheel(surface: pygame.Surface, fonts: Dict[str, pygame.font.Fo
             else:
                  pass # Draw normally when not visible during flash cycle
 
-        # Calculate points for polygon wedge
-        points = [(wheel_center, wheel_center)]
-        steps = 5
+        # --- Draw Wedge ---
+        # Calculate points for the outer and inner arcs of the wedge
+        outer_points = []
+        inner_points = []
+        steps = 10 # More steps for smoother arc
         for j in range(steps + 1):
-            # Angle adjustment for Pygame coordinates (-90 degrees)
             angle = math.radians(start_angle_deg + (end_angle_deg - start_angle_deg) * j / steps - 90)
-            x = wheel_center + wheel_radius * math.cos(angle)
-            y = wheel_center + wheel_radius * math.sin(angle)
-            points.append((x, y))
+            # Outer arc points
+            outer_x = wheel_center_on_surf + num_outer_r * math.cos(angle)
+            outer_y = wheel_center_on_surf + num_outer_r * perspective * math.sin(angle)
+            outer_points.append((outer_x, outer_y))
+            # Inner arc points (calculate in reverse order for polygon)
+            inner_x = wheel_center_on_surf + num_inner_r * math.cos(angle)
+            inner_y = wheel_center_on_surf + num_inner_r * perspective * math.sin(angle)
+            inner_points.insert(0, (inner_x, inner_y)) # Insert at beginning
 
-        pygame.draw.polygon(wheel_surf, current_color, points) # Use current_color
-        # Draw border with potentially adjusted thickness/color
-        # Exclude the center point when drawing lines
-        pygame.draw.lines(wheel_surf, border_color, False, points[1:], border_thickness)
+        # Combine points: outer arc, then inner arc
+        wedge_points = outer_points + inner_points
+        if len(wedge_points) >= 3: # Need at least 3 points to draw polygon
+            pygame.draw.polygon(wheel_surf, current_color, wedge_points)
 
+            # Draw Dividers (borders of the wedge)
+            # Draw the two radial lines
+            if len(outer_points) > 0 and len(inner_points) > 0:
+                pygame.draw.line(wheel_surf, border_color, outer_points[0], inner_points[-1], border_thickness)
+                pygame.draw.line(wheel_surf, border_color, outer_points[-1], inner_points[0], border_thickness)
+            # Draw the outer and inner arcs (optional, can make dividers thicker)
+            # pygame.draw.lines(wheel_surf, border_color, False, outer_points, border_thickness)
+            # pygame.draw.lines(wheel_surf, border_color, False, inner_points, border_thickness)
 
-        # Draw number text (rotated)
+        # Draw number text (rotated and positioned on ellipse)
         text_angle_deg = start_angle_deg + angle_per_slot / 2
-        # Position calculation based on angle
-        text_x = wheel_center + number_radius * math.cos(math.radians(text_angle_deg - 90))
-        text_y = wheel_center + number_radius * math.sin(math.radians(text_angle_deg - 90))
+        # Position calculation based on average radius
+        text_radius_x = (num_outer_r + num_inner_r) / 2
+        text_angle_rad = math.radians(text_angle_deg - 90)
+        text_x = wheel_center_on_surf + text_radius_x * math.cos(text_angle_rad)
+        text_y = wheel_center_on_surf + text_radius_x * perspective * math.sin(text_angle_rad)
 
         num_surf = number_font.render(str(number), True, colors.WHITE)
-        # Rotation angle needs to be negative for clockwise text rotation in Pygame
         num_surf_rotated = pygame.transform.rotate(num_surf, -text_angle_deg)
         num_rect = num_surf_rotated.get_rect(center=(text_x, text_y))
         wheel_surf.blit(num_surf_rotated, num_rect)
 
-    # Rotate the entire wheel surface based on the calculated current_angle
-    rotated_wheel_surf = pygame.transform.rotate(wheel_surf, current_angle)
-    rotated_rect = rotated_wheel_surf.get_rect(center=(center_x, center_y))
+    # --- Draw Center Hub (on wheel_surf before rotation) ---
+    hub_base_color = (50, 50, 50) # Dark Grey
+    hub_highlight_color = (100, 100, 100) # Lighter Grey
+    hub_pin_color = colors.GOLD
 
-    # Blit the rotated wheel onto the main surface
-    surface.blit(rotated_wheel_surf, rotated_rect)
+    draw_ellipse(wheel_surf, hub_base_color, (wheel_center_on_surf, wheel_center_on_surf), hub_r, hub_r * perspective)
+    draw_ellipse(wheel_surf, hub_highlight_color, (wheel_center_on_surf, wheel_center_on_surf), hub_r * 0.8, hub_r * 0.8 * perspective)
+    draw_ellipse(wheel_surf, hub_pin_color, (wheel_center_on_surf, wheel_center_on_surf), hub_r * 0.5, hub_r * 0.5 * perspective)
+    draw_ellipse(wheel_surf, colors.BLACK, (wheel_center_on_surf, wheel_center_on_surf), hub_r * 0.3, hub_r * 0.3 * perspective)
 
-    # Draw center pin
-    pygame.draw.circle(surface, colors.GOLD, (center_x, center_y), 15)
-    pygame.draw.circle(surface, colors.BLACK, (center_x, center_y), 13)
+    # Blit the stationary wheel surface onto the main surface
+    wheel_rect = wheel_surf.get_rect(center=center_pos)
+    surface.blit(wheel_surf, wheel_rect)
 
-    # --- Draw Ball removed ---
+    # --- Draw Ball ---
+    # Calculate ball position based on its angle and radius (relative to screen center)
+    # Ball angle is now absolute
+    effective_ball_angle_deg = ball_current_angle
+    ball_angle_rad = math.radians(effective_ball_angle_deg - 90) # Adjust for Pygame coordinates
+    ball_x = center_pos[0] + ball_current_radius_x * math.cos(ball_angle_rad)
+    ball_y = center_pos[1] + ball_current_radius_y * math.sin(ball_angle_rad) # Use perspective radius
+
+    # Draw shadow first
+    shadow_pos = (ball_x + layout_roulette.BALL_SHADOW_OFFSET, ball_y + layout_roulette.BALL_SHADOW_OFFSET)
+    pygame.draw.circle(surface, layout_roulette.BALL_SHADOW_COLOR, shadow_pos, layout_roulette.BALL_RADIUS)
+    # Draw ball
+    pygame.draw.circle(surface, layout_roulette.BALL_COLOR, (ball_x, ball_y), layout_roulette.BALL_RADIUS)
 
     # --- Draw Pointer ---
     pointer_size = 20
+    # Position pointer above the outer rim
+    pointer_tip_y = center_pos[1] - rim_outer_r * perspective - 5 # Y-coord based on perspective radius
     pointer_points = [
-        (center_x, center_y - wheel_radius - 5), # Tip
-        (center_x - pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom left
-        (center_x + pointer_size // 2, center_y - wheel_radius - pointer_size - 5), # Bottom right
+        (center_pos[0], pointer_tip_y), # Tip
+        (center_pos[0] - pointer_size // 2, pointer_tip_y - pointer_size), # Bottom left
+        (center_pos[0] + pointer_size // 2, pointer_tip_y - pointer_size), # Bottom right
     ]
     pygame.draw.polygon(surface, colors.GOLD, pointer_points)
 
     # Display winning number text only when wheel is stopped (pause phase)
-    if spin_timer == 0:
+    if spin_timer == 0 and pause_timer > 0: # Show during pause/flash phase
          win_text = f"Result: {winning_number}"
-         draw_text(surface, win_text, fonts['result'], center_x, center_y + wheel_radius + 40, colors.YELLOW, center=True)
+         draw_text(surface, win_text, fonts['result'], center_pos[0], center_pos[1] + rim_outer_r + 40, colors.YELLOW, center=True)
