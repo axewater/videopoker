@@ -72,10 +72,10 @@ BACCARAT_BUTTON_RECT = pygame.Rect(
     BUTTON_HEIGHT
 )
 
-# Restart Game Button Rectangle (Position bottom-center on Game Select)
+# Restart Game Button Rectangle (Position bottom-right on Game Select, mirroring Back button)
 RESTART_GAME_BUTTON_RECT = pygame.Rect(
-    display.SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
-    GAME_SELECT_BUTTON_Y_START + 6 * (BUTTON_HEIGHT + GAME_SELECT_BUTTON_SPACING) + 20,
+    display.SCREEN_WIDTH - BUTTON_WIDTH - 20, # Position from right edge
+    display.SCREEN_HEIGHT - BUTTON_HEIGHT - 20, # Position from bottom edge
     BUTTON_WIDTH,
     BUTTON_HEIGHT
 )
